@@ -48,3 +48,47 @@
   :custom-face
   (rime-default-face ((t (:background "gray100" :foreground "#333333"))))
   )
+
+;; gpt config
+(let* ((local-server "127.0.0.1")
+       (url (format "https://%s/v1/models" local-server))
+       (local-key (getenv "LOCAL_GPT_KEY")))
+  (request url
+    :parser 'json-read
+    :sync t
+    :success
+    (cl-function
+     (lambda (&key data &allow-other-keys)
+       (let* ((models (cdr (assoc 'data data)))
+              (ids (mapcar (lambda (m)
+                             (cdr (assoc 'id m))) models))
+              (id-not-found t)
+              )
+         (dolist (id '("gpt-4" "gpt-3.5-turbo"))
+           (when (and id-not-found (member id ids))
+             (use-package! gptel
+               :custom
+               (gptel-model id)
+               :config
+               (setq-default gptel-backend (gptel-make-openai "ChatGPT"
+                                             :key local-key
+                                             :host local-server
+                                             :stream t
+                                             :models '("gpt-3.5-turbo" "gpt-4")
+                                             )
+                             )
+               )
+             (setq id-not-found nil)
+             )
+           )
+         )
+       )
+     )
+    :error
+    (cl-function
+     (lambda (&rest args &key data error-thrown &allow-other-keys)
+       (message "My GPT: No avliable local GPT service. error: %S" error-thrown)
+       )
+     )
+    )
+  )

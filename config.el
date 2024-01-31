@@ -1,4 +1,7 @@
 (global-set-key (kbd "s-k") 'kill-current-buffer)
+(setq doom-theme 'doom-dracula
+      doom-font (font-spec :size 14)
+      doom-variable-pitch-font (font-spec :size 16))
 ;; session
 (use-package! savehist
   :init
@@ -12,9 +15,6 @@
       (desktop-read)
       (remove-hook 'after-make-frame-functions 'restore-desktop)))
   (add-hook 'after-make-frame-functions 'restore-desktop))
-
-;; theme
-(load-theme 'nord t)
 
 ;; region
 (use-package! expand-region

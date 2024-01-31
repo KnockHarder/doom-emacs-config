@@ -4,12 +4,17 @@
        :ui
        doom
        doom-dashboard
+       workspaces
+       modeline
+       (treemacs +lsp)
        :emacs
        (ibuffer +icons)
        :tools
        (magit)
        (lsp  +eglot)
        (tree-sitter)
+       :editor
+       (format +onsave)
        :lang
        markdown
        (python +lsp +pyright +pyenv +tree-sitter)

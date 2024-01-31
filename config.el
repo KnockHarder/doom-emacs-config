@@ -2,11 +2,8 @@
 (setq doom-theme 'doom-dracula
       doom-font (font-spec :size 14)
       doom-variable-pitch-font (font-spec :size 16))
-;; session
-(use-package! savehist
-  :init
-  (savehist-mode))
 
+;; resotre desktop auto
 (if (not (daemonp))
     (desktop-save-mode 1)
   (defun restore-desktop (frame)
@@ -30,7 +27,8 @@
   (default-input-method "rime")
   (rime-show-candidate 'posframe)
   (rime-librime-root (expand-file-name "librime/dist" user-emacs-directory))
-  (rime-emacs-module-header-root (expand-file-name "librime/manual-headers" user-emacs-directory))
+  (rime-emacs-module-header-root (expand-file-name "librime/manual-headers"
+                                                   user-emacs-directory))
   (rime-user-data-dir "~/Library/Rime")
   (rime-disable-predicates '(rime-predicate-space-after-cc-p
                              rime-predicate-after-alphabet-char-p

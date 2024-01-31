@@ -11,6 +11,7 @@
        (lsp  +eglot)
        (tree-sitter)
        :lang
+       markdown
        (python +lsp +pyright +pyenv +tree-sitter)
        emacs-lisp
        :config

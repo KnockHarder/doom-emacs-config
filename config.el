@@ -50,8 +50,8 @@
   )
 
 ;; gpt config
-(let* ((local-server "127.0.0.1")
-       (url (format "https://%s/v1/models" local-server))
+(let* ((local-server "127.0.0.1:8080")
+       (url (format "http://%s/v1/models" local-server))
        (local-key (getenv "LOCAL_GPT_KEY")))
   (request url
     :parser 'json-read
@@ -75,6 +75,7 @@
                                              :host local-server
                                              :stream t
                                              :models '("gpt-3.5-turbo" "gpt-4")
+                                             :protocol "http"
                                              )
                              )
                )

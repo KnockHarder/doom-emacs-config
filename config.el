@@ -40,13 +40,12 @@
                              rime-predicate-punctuation-line-begin-p))
   :config
   (add-to-list 'safe-local-variable-values
-	       '(eval progn (activate-rime)))
+               '(eval progn (activate-rime)))
   (defun activate-rime()
     (activate-input-method default-input-method))
   (add-hook 'markdown-mode-hook 'activate-rime)
   (add-hook 'plantuml-mode-hook 'activate-rime)
-  :custom-face
-  (rime-default-face ((t (:background "gray100" :foreground "#333333"))))
+  (add-hook 'git-commit-mode-hook 'activate-rime)
   )
 
 ;; gpt config

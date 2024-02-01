@@ -1,7 +1,11 @@
+;;; init.el -- init
+
+;; key bindings and theme
 (global-set-key (kbd "s-k") 'kill-current-buffer)
 (setq doom-theme 'doom-dracula
       doom-font (font-spec :size 14)
       doom-variable-pitch-font (font-spec :size 16))
+(setq project-find-functions '(project-try-vc project-projectile))
 
 ;; resotre desktop auto
 (if (not (daemonp))
@@ -90,3 +94,25 @@
      )
     )
   )
+
+;; lsp java
+(after! eglot
+  (defun eglot-connect-to-jdtls (_interactive workspace)
+    (unless (executable-find "jdtls")
+      (user-error "You should install 'jdtls' first"))
+    (let ((dir (car (last workspace)))
+          )
+      (list "jdtls"
+            "-configuration" (expand-file-name
+                              "language-server/java/jdtls/config_mac"
+                              user-emacs-directory)
+            "--jvm-arg=-Xmx8G"
+            "-data" (expand-file-name dir)
+            )
+      )
+    )
+  (add-to-list 'eglot-server-programs '(java-mode . eglot-connect-to-jdtls))
+  )
+(add-hook 'java-mode-hook '(lambda ()
+                             (setq fill-column 120))
+          )

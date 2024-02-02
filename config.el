@@ -113,6 +113,3 @@
     )
   (add-to-list 'eglot-server-programs '(java-mode . eglot-connect-to-jdtls))
   )
-(add-hook 'java-mode-hook '(lambda ()
-                             (setq fill-column 120))
-          )

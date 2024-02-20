@@ -90,6 +90,18 @@
   )
 
 ;; code
+(defun my/setup-pipenv ()
+  "set python paths for pipenv."
+  (let ((python-path (string-trim (shell-command-to-string "pipenv run which python")))
+        )
+    (setq-local python-interpreter python-path)
+    (setq-local pythonic-interpreter python-path)
+    (setq-local lsp-pyright-python-executable-cmd python-path)
+    (shell-command "pipenv run pip install isort pyflakes flake8")
+    )
+  )
+(add-hook! pipenv-mode #'my/setup-pipenv)
+
 (require 'lsp-java)
 (use-package! lsp-java
   :custom

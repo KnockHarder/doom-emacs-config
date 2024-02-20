@@ -8,6 +8,7 @@
        (default +bindings +smartparens)
        :editor
        (format +onsave)
+       snippets
        :emacs
        (ibuffer +icons)
        :lang
@@ -17,7 +18,7 @@
        (java +lsp)
        :tools
        (magit)
-       (lsp +eglot)
+       (lsp)
        (tree-sitter)
        :ui
        doom

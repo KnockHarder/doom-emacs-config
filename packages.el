@@ -3,3 +3,4 @@
 (package! rime)
 (package! gptel)
 (package! request)
+(package! rg)

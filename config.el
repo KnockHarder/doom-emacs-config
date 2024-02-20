@@ -22,8 +22,7 @@
   :bind
   ("C-=" . er/expand-region))
 
-(after! magit
-  (setq magit-diff-refine-hunk 'all))
+(setq-hook! magit-status-mode magit-diff-refine-hunk 'all)
 
 ;; rime
 (use-package! rime
@@ -95,21 +94,26 @@
     )
   )
 
-;; lsp java
-(after! eglot
-  (defun eglot-connect-to-jdtls (_interactive workspace)
-    (unless (executable-find "jdtls")
-      (user-error "You should install 'jdtls' first"))
-    (let ((dir (car (last workspace)))
-          )
-      (list "jdtls"
-            "-configuration" (expand-file-name
-                              "language-server/java/jdtls/config_mac"
-                              user-emacs-directory)
-            "--jvm-arg=-Xmx8G"
-            "-data" (expand-file-name dir)
-            )
-      )
+(require 'lsp-java)
+(use-package! lsp-java
+  :custom
+  (lsp-java-server-install-dir
+   (expand-file-name "language-server/java/jdtls/" user-emacs-directory))
+  (lsp-response-timeout 3)
+  :hook
+  (java-mode . subword-mode)
+  :bind
+  (:map lsp-mode-map
+        ("C-c c p r" . #'lsp-ui-peek-find-references)
+        ("C-c c p d" . #'lsp-ui-doc-glance)
+        ("C-c c p i" . #'lsp-ui-doc-show))
+  )
+(add-hook! java-mode #'toggle-frame-maximized)
+
+(after! spell-fu
+  (let ((dict (spell-fu-get-ispell-dictionary "english"))
+        )
+    (when dict
+      (setq-default spell-fu-dictionaries `(,dict)))
     )
-  (add-to-list 'eglot-server-programs '(java-mode . eglot-connect-to-jdtls))
   )

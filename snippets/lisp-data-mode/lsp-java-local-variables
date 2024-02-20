@@ -1,0 +1,50 @@
+# -*- mode: snippet -*-
+# name: local dir configuration for lsp-java
+# uuid:
+# key: lsp-java-local-vars
+# condition: t
+# --
+(tab-width . 4)
+(fill-column . 120)
+(ispell-dictionary . "english")
+(gc-cons-threshold . 100000000)
+(read-process-output-max . 1048576)
+(lsp-java-workspace-dir . "${1:project dir}")
+(lsp-java-java-path . "${2:java home}/bin/java")
+(lsp-java-workspace-cache-dir . "$1/.lsp-cache/")
+(lsp-java-vmargs . ("-XX:+UseParallelGC"
+                    "-XX:GCTimeRatio=4"
+                    "-XX:AdaptiveSizePolicyWeight=90"
+                    "-Dsun.zip.disableMemoryMapping=true"
+                    "-Xmx2G"
+                    "-Xms100m"
+                    "-Djdt.ls.debug=true"))
+(lsp-java-import-maven-enabled  . t)
+(lsp-java-import-gradle-enabled . nil)
+(lsp-java-maven-download-sources . t)
+(lsp-java-implementations-code-lens-enabled . t)
+(lsp-java-configuration-maven-user-settings . "${3:user home dir}/.m2/settings.xml")
+(lsp-java-content-provider-preferred . "fernflower")
+(lsp-java-autobuild-enabled . nil)
+(lsp-java-max-concurrent-builds . 12)
+(lsp-java-completion-enabled . t)
+(lsp-java-completion-overwrite . t)
+(lsp-java-completion-guess-method-arguments . t)
+(lsp-java-completion-import-order . ["java" "javax" "org" "com"])
+(lsp-java-progress-reports-enabled . t)
+(lsp-java-format-settings-url . "https://raw.githubusercontent.com/google/styleguide/gh-pages/eclipse-java-google-style.xml")
+(lsp-java-format-settings-profile . "GoogleStyle")
+(lsp-java-format-comments-enabled . t)
+(lsp-java-format-on-type-enabled . t)
+(lsp-java-code-generation-hash-code-equals-use-java7objects . t)
+(lsp-java-code-generation-hash-code-equals-use-instanceof . t)
+(lsp-java-code-generation-use-blocks . t)
+(lsp-java-configuration-runtimes . [(:name "openjdk 11"
+                                      :path "${4: project jdk home}"
+                                      :default t)
+                                     ])
+(lsp-java-completion-filtered-types . ["java.awt.*"
+                                       "com.sun.*"
+                                       ])
+(lsp-java-save-actions-organize-imports . t)
+(lsp-java-completion-max-results . 100)

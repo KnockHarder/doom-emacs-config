@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: collect stream to list
+# uuid:
+# key: tolist
+# condition: t
+# --
+collect(Collectors.toList());$0

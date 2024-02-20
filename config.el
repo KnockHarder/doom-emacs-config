@@ -7,15 +7,10 @@
       doom-variable-pitch-font (font-spec :size 16))
 (setq project-find-functions '(project-try-vc project-projectile))
 
-;; resotre desktop auto
-(if (not (daemonp))
-    (desktop-save-mode 1)
-  (defun restore-desktop (frame)
-    (with-selected-frame frame
-      (desktop-save-mode 1)
-      (desktop-read)
-      (remove-hook 'after-make-frame-functions 'restore-desktop)))
-  (add-hook 'after-make-frame-functions 'restore-desktop))
+;; maximum frame after UI initialized
+(add-to-list 'default-frame-alist '(width . 120))
+(add-to-list 'default-frame-alist '(height . 40))
+(add-hook 'doom-init-ui-hook #'toggle-frame-maximized)
 
 ;; region
 (use-package! expand-region
@@ -94,6 +89,7 @@
     )
   )
 
+;; code
 (require 'lsp-java)
 (use-package! lsp-java
   :custom
@@ -108,7 +104,6 @@
         ("C-c c p d" . #'lsp-ui-doc-glance)
         ("C-c c p i" . #'lsp-ui-doc-show))
   )
-(add-hook! java-mode #'toggle-frame-maximized)
 
 (after! spell-fu
   (let ((dict (spell-fu-get-ispell-dictionary "english"))
@@ -117,3 +112,6 @@
       (setq-default spell-fu-dictionaries `(,dict)))
     )
   )
+
+(after! ispell
+  (setq-default ispell-dictionary "english"))

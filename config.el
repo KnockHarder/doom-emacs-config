@@ -127,3 +127,16 @@
 
 (after! ispell
   (setq-default ispell-dictionary "english"))
+
+(use-package! go-translate
+  :commands gts-do-translate
+  :custom
+  (gts-translate-list '(("en" "zh")))
+  :config
+  (setq-default gts-default-translator
+                (gts-translator
+                 :picker (gts-noprompt-picker)
+                 :engines (list (gts-stardict-engine)
+                                (gts-google-engine)
+                                (gts-youdao-dict-engine))
+                 :render (gts-buffer-render))))

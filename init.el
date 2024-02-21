@@ -20,6 +20,7 @@
        (magit)
        (lsp)
        (tree-sitter)
+       (editorconfig)
        :ui
        doom
        doom-dashboard

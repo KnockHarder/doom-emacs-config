@@ -13,6 +13,7 @@
        (ibuffer +icons)
        :lang
        emacs-lisp
+       (json +lsp)
        markdown
        (python +lsp +pyright +pyenv +tree-sitter)
        (java +lsp)

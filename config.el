@@ -11,6 +11,29 @@
 (add-to-list 'default-frame-alist '(width . 120))
 (add-to-list 'default-frame-alist '(height . 40))
 (add-hook 'doom-init-ui-hook #'toggle-frame-maximized)
+(defun my/open-side-window (buf &optional position)
+  (interactive "bSelect Buffer:")
+  (unless position
+    (let* ((pos-str (completing-read "Choose a position: "
+                                     '(left top right bottom)))
+           )
+      (setq position (cond
+                      ((string-equal pos-str "left") 'left)
+                      ((string-equal pos-str "top") 'top)
+                      ((string-equal pos-str "right") 'right)
+                      ((string-equal pos-str "bottom") 'bottom)))
+      ))
+  (let* ((widown-width (if (memq position  (list 'left 'right)) 35 nil))
+         (window-height (if (memq position (list 'top 'bottom)) 10 nil))
+         (win (display-buffer buf `(display-buffer-in-side-window
+                                    .
+                                    (
+                                     (side . ,position)
+                                     (window-width . ,widown-width)
+                                     (window-height . ,window-height)
+                                     (dedicated . t)
+                                     (no-other-window . t))))))
+    (set-window-parameter win 'no-other-window t)))
 
 ;; region
 (use-package! expand-region
@@ -90,6 +113,12 @@
   )
 
 ;; code
+(use-package! python
+  :bind
+  (:map python-mode-map
+        ("C-c M-}" . #'python-nav-forward-defun)
+        ("C-c M-{" . #'python-nav-backward-defun)
+        ))
 (defun my/setup-pipenv ()
   "set python paths for pipenv."
   (let ((python-path (string-trim (shell-command-to-string "pipenv run which python")))

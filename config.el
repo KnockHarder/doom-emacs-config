@@ -74,6 +74,7 @@
   (request url
     :parser 'json-read
     :sync t
+    :timeout 1
     :success
     (cl-function
      (lambda (&key data &allow-other-keys)
@@ -85,6 +86,7 @@
          (dolist (id '("gpt-4" "gpt-3.5-turbo"))
            (when (and id-not-found (member id ids))
              (use-package! gptel
+               :commands gptel
                :custom
                (gptel-model id)
                :config
@@ -114,6 +116,7 @@
 
 ;; code
 (use-package! python
+  :commands python python-mode
   :bind
   (:map python-mode-map
         ("C-c M-}" . #'python-nav-forward-defun)

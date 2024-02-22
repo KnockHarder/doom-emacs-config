@@ -5,7 +5,6 @@
 (setq doom-theme 'doom-dracula
       doom-font (font-spec :size 14)
       doom-variable-pitch-font (font-spec :size 16))
-(setq project-find-functions '(project-try-vc project-projectile))
 
 ;; maximum frame after UI initialized
 (add-to-list 'default-frame-alist '(width . 120))
@@ -49,6 +48,7 @@
                             (not (window-parameter window 'window-side)))
                           (window-list))))
   )
+(global-set-key (kbd "C-x 1") #'my/delete-other-on-side-windows)
 (defun my/scroll-window (direction)
   (let* ((window-alist (mapcar (lambda (w)
                                  (cons (buffer-name (window-buffer w)) w))
@@ -153,6 +153,9 @@
   )
 
 ;; code
+(setq project-find-functions '(project-try-vc project-projectile))
+(add-to-list 'projectile-project-root-functions #'vc-git-root)
+(setq gcmh-high-cons-threshold (* 1024 (* 1024 16)))
 (use-package! python
   :commands python python-mode
   :bind
@@ -180,6 +183,8 @@
   (lsp-response-timeout 3)
   :hook
   (java-mode . subword-mode)
+  (java-mode . (lambda ()
+                 (setq read-process-output-max (* 1024 (* 1024 3)))))
   :bind
   (:map lsp-mode-map
         ("C-c c p r" . #'lsp-ui-peek-find-references)

@@ -11,6 +11,13 @@
 (add-to-list 'default-frame-alist '(width . 120))
 (add-to-list 'default-frame-alist '(height . 40))
 (add-hook 'doom-init-ui-hook #'toggle-frame-maximized)
+(use-package! ace-window
+  :commands ace-window
+  :custom
+  (aw-scope 'frame)
+  )
+
+;; my window functions
 (defun my/open-side-window (buf &optional position)
   (interactive "bSelect Buffer:")
   (unless position

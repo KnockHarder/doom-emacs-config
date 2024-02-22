@@ -34,6 +34,36 @@
                                      (dedicated . t)
                                      (no-other-window . t))))))
     (set-window-parameter win 'no-other-window t)))
+(defun my/delete-other-on-side-windows ()
+  (interactive)
+  (mapc #'delete-window
+        (delq (selected-window)
+              (seq-filter (lambda (window)
+                            (not (window-parameter window 'window-side)))
+                          (window-list))))
+  )
+(defun my/scroll-window (direction)
+  (let* ((window-alist (mapcar (lambda (w)
+                                 (cons (buffer-name (window-buffer w)) w))
+                               (window-list)))
+         (selected (assoc (completing-read "Select window: " (mapcar 'car window-alist))
+                          window-alist))
+         (window (cdr selected)))
+    (with-selected-window window
+      (if (eq direction 'up)
+          (scroll-up '-)
+        (scroll-up)
+        )
+      )
+    ))
+(defun my/scroll-up-window ()
+  (interactive)
+  (my/scroll-window 'up)
+  )
+(defun my/scroll-down-window ()
+  (interactive)
+  (my/scroll-window 'down)
+  )
 
 ;; region
 (use-package! expand-region
@@ -173,3 +203,5 @@
                                 (gts-google-engine)
                                 (gts-youdao-dict-engine))
                  :render (gts-buffer-render))))
+
+(setq! org-image-actual-width nil)

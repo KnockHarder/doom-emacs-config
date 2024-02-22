@@ -85,14 +85,15 @@
               )
          (dolist (id '("gpt-4" "gpt-3.5-turbo"))
            (when (and id-not-found (member id ids))
+             (setq my/gptel-model id my/gptel-key local-key my/gptel-host local-server)
              (use-package! gptel
                :commands gptel
                :custom
-               (gptel-model id)
+               (gptel-model my/gptel-model)
                :config
                (setq-default gptel-backend (gptel-make-openai "ChatGPT"
-                                             :key local-key
-                                             :host local-server
+                                             :key my/gptel-key
+                                             :host my/gptel-host
                                              :stream t
                                              :models '("gpt-3.5-turbo" "gpt-4")
                                              :protocol "http"

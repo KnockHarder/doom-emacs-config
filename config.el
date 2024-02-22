@@ -49,28 +49,29 @@
                           (window-list))))
   )
 (global-set-key (kbd "C-x 1") #'my/delete-other-on-side-windows)
-(defun my/scroll-window (direction)
+(defun my/read-window-not-side ()
+  "Select not side window in current frame."
   (let* ((window-alist (mapcar (lambda (w)
                                  (cons (buffer-name (window-buffer w)) w))
                                (window-list)))
          (selected (assoc (completing-read "Select window: " (mapcar 'car window-alist))
                           window-alist))
-         (window (cdr selected)))
-    (with-selected-window window
-      (if (eq direction 'up)
-          (scroll-up '-)
-        (scroll-up)
-        )
-      )
-    ))
-(defun my/scroll-up-window ()
-  (interactive)
-  (my/scroll-window 'up)
-  )
-(defun my/scroll-down-window ()
-  (interactive)
-  (my/scroll-window 'down)
-  )
+         )
+    (cdr selected)))
+(defun my/scroll-up-window (window &optional ARG)
+  "Select not side window in current frame and scroll down.
+ Like scroll-up-command."
+  (interactive (list (my/read-window-not-side) current-prefix-arg))
+  (with-selected-window window
+    (scroll-up ARG)))
+(defun my/scroll-down-window (window &optional ARG)
+  "Select not side window in current frame and scroll down.
+ Like scroll-up-command."
+  (interactive (list (my/read-window-not-side) current-prefix-arg))
+  (with-selected-window window
+    (scroll-up (if ARG
+                   (- ARG)
+                 '-))))
 
 ;; region
 (use-package! expand-region

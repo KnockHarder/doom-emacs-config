@@ -49,29 +49,32 @@
                           (window-list))))
   )
 (global-set-key (kbd "C-x 1") #'my/delete-other-on-side-windows)
-(defun my/read-window-not-side ()
+(defun my/read-window ()
   "Select not side window in current frame."
   (let* ((window-alist (mapcar (lambda (w)
                                  (cons (buffer-name (window-buffer w)) w))
                                (window-list)))
-         (selected (assoc (completing-read "Select window: " (mapcar 'car window-alist))
-                          window-alist))
-         )
+         (selected (assoc (completing-read "Select window: " (mapcar 'car window-alist)
+                                           nil t nil nil
+                                           (buffer-name (window-buffer (next-window))))
+                          window-alist)))
     (cdr selected)))
-(defun my/scroll-up-window (window &optional ARG)
+(defun my/scroll-window-up (window &optional ARG)
   "Select not side window in current frame and scroll down.
  Like scroll-up-command."
-  (interactive (list (my/read-window-not-side) current-prefix-arg))
+  (interactive (list (my/read-window) current-prefix-arg))
   (with-selected-window window
     (scroll-up ARG)))
-(defun my/scroll-down-window (window &optional ARG)
+(defun my/scroll-window-down (window &optional ARG)
   "Select not side window in current frame and scroll down.
  Like scroll-up-command."
-  (interactive (list (my/read-window-not-side) current-prefix-arg))
+  (interactive (list (my/read-window) current-prefix-arg))
   (with-selected-window window
     (scroll-up (if ARG
                    (- ARG)
                  '-))))
+(global-set-key (kbd "C-M-v") #'my/scroll-window-up)
+(global-set-key (kbd "C-M-S-v") #'my/scroll-window-down)
 
 ;; region
 (use-package! expand-region
@@ -155,7 +158,8 @@
 
 ;; code
 (setq project-find-functions '(project-try-vc project-projectile))
-(add-to-list 'projectile-project-root-functions #'vc-git-root)
+(after! vc-git
+  (add-to-list 'projectile-project-root-functions #'vc-git-root))
 (setq gcmh-high-cons-threshold (* 1024 (* 1024 16)))
 (use-package! python
   :commands python python-mode

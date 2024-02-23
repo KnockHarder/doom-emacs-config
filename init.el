@@ -15,12 +15,11 @@
        emacs-lisp
        (json +lsp)
        markdown
-       (python +lsp +pyright +pyenv +tree-sitter)
+       (python +lsp +pyenv)
        (java +lsp)
        :tools
        (magit)
        (lsp)
-       (tree-sitter)
        (editorconfig)
        :ui
        doom

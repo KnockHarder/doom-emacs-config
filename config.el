@@ -160,6 +160,28 @@
 (setq project-find-functions '(project-try-vc project-projectile))
 (after! vc-git
   (add-to-list 'projectile-project-root-functions #'vc-git-root))
+(after! projectile
+  (defun my/projectile-find-file (&optional invalidate-cache)
+    (interactive "P")
+    (projectile-maybe-invalidate-cache invalidate-cache)
+    (let* ((project-root (projectile-acquire-root))
+           (symbol (thing-at-point 'symbol))
+           (default-value (if symbol
+                              (downcase symbol)
+                            nil))
+           (prompt (if default-value
+                       (format "Find file (default %s): " default-value)
+                     "Find file: "))
+           (file (projectile-completing-read prompt
+                                             (projectile-project-files project-root)
+                                             :initial-input default-value))
+           )
+      (when file
+        (find-file  (expand-file-name file project-root))
+        (run-hooks 'projectile-find-file-hook))))
+  (define-key projectile-mode-map (kbd "C-c p f") 'my/projectile-find-file)
+  )
+
 (setq gcmh-high-cons-threshold (* 1024 (* 1024 16)))
 (use-package! python
   :commands python python-mode
@@ -222,3 +244,6 @@
                  :render (gts-buffer-render))))
 
 (setq! org-image-actual-width nil)
+
+;; browser
+(setq! browse-url-browser-function #'xwidget-webkit-browse-url)

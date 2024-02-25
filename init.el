@@ -17,6 +17,7 @@
        markdown
        (python +lsp +pyenv)
        (java +lsp)
+       (org +pretty)
        :tools
        (magit)
        (lsp)

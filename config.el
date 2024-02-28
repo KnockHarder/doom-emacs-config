@@ -81,7 +81,12 @@
   :bind
   ("C-=" . er/expand-region))
 
-(setq-hook! magit-status-mode magit-diff-refine-hunk 'all)
+;; version control
+(use-package! magit
+  :commands magit--handle-bookmark
+  :config
+  (setq-default magit-diff-refine-hunk 'all)
+  )
 
 ;; rime
 (use-package! rime
@@ -204,7 +209,6 @@
 
 (add-to-list 'auto-mode-alist '("\\.java\\'" . java-ts-mode))
 (add-hook! java-ts-mode #'lsp)
-(require 'lsp-java)
 (use-package! lsp-java
   :custom
   (lsp-java-server-install-dir

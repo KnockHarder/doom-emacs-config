@@ -9,9 +9,7 @@
 (ispell-dictionary . "english")
 (gc-cons-threshold . 100000000)
 (read-process-output-max . 1048576)
-(lsp-java-workspace-dir . "${1:`(expand-file-name (project-root (project-current)))`}")
 (lsp-java-java-path . "${2:`(expand-file-name "bin/java" (getenv "JAVA_HOME"))`}")
-(lsp-java-workspace-cache-dir . "`(expand-file-name ".lsp-cache/" "$1")`")
 (lsp-java-vmargs . ("-XX:+UseParallelGC"
                     "-XX:GCTimeRatio=4"
                     "-XX:AdaptiveSizePolicyWeight=90"
@@ -43,8 +41,5 @@
                                       :path "${7:`(getenv "JAVA11_HOME")`}/"
                                       :default t)
                                      ])
-(lsp-java-completion-filtered-types . ["java.awt.*"
-                                       "com.sun.*"
-                                       ])
 (lsp-java-save-actions-organize-imports . t)
 (lsp-java-completion-max-results . 100)

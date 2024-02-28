@@ -9,21 +9,21 @@
 (ispell-dictionary . "english")
 (gc-cons-threshold . 100000000)
 (read-process-output-max . 1048576)
-(lsp-java-workspace-dir . "${1:project dir}")
-(lsp-java-java-path . "${2:java home}/bin/java")
-(lsp-java-workspace-cache-dir . "$1/.lsp-cache/")
+(lsp-java-workspace-dir . "${1:`(expand-file-name (project-root (project-current)))`}")
+(lsp-java-java-path . "${2:`(expand-file-name "bin/java" (getenv "JAVA_HOME"))`}")
+(lsp-java-workspace-cache-dir . "`(expand-file-name ".lsp-cache/" "$1")`")
 (lsp-java-vmargs . ("-XX:+UseParallelGC"
                     "-XX:GCTimeRatio=4"
                     "-XX:AdaptiveSizePolicyWeight=90"
                     "-Dsun.zip.disableMemoryMapping=true"
-                    "-Xmx2G"
-                    "-Xms100m"
+                    "-Xmx${3:2G}"
+                    "-Xms${4:100m}"
                     "-Djdt.ls.debug=true"))
 (lsp-java-import-maven-enabled  . t)
 (lsp-java-import-gradle-enabled . nil)
 (lsp-java-maven-download-sources . t)
 (lsp-java-implementations-code-lens-enabled . t)
-(lsp-java-configuration-maven-user-settings . "${3:user home dir}/.m2/settings.xml")
+(lsp-java-configuration-maven-user-settings . "${5:`(expand-file-name ".m2/settings.xml" (getenv "HOME"))`}")
 (lsp-java-content-provider-preferred . "fernflower")
 (lsp-java-autobuild-enabled . nil)
 (lsp-java-max-concurrent-builds . 12)
@@ -39,8 +39,8 @@
 (lsp-java-code-generation-hash-code-equals-use-java7objects . t)
 (lsp-java-code-generation-hash-code-equals-use-instanceof . t)
 (lsp-java-code-generation-use-blocks . t)
-(lsp-java-configuration-runtimes . [(:name "openjdk 11"
-                                      :path "${4: project jdk home}"
+(lsp-java-configuration-runtimes . [(:name "${6:JavaSE-11}"
+                                      :path "${7:`(getenv "JAVA11_HOME")`}/"
                                       :default t)
                                      ])
 (lsp-java-completion-filtered-types . ["java.awt.*"

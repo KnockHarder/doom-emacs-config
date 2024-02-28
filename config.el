@@ -202,6 +202,8 @@
   )
 (add-hook! pipenv-mode #'my/setup-pipenv)
 
+(add-to-list 'auto-mode-alist '("\\.java\\'" . java-ts-mode))
+(add-hook! java-ts-mode #'lsp)
 (require 'lsp-java)
 (use-package! lsp-java
   :custom
@@ -217,7 +219,32 @@
         ("C-c c p r" . #'lsp-ui-peek-find-references)
         ("C-c c p d" . #'lsp-ui-doc-glance)
         ("C-c c p i" . #'lsp-ui-doc-show))
-  )
+  :config
+  (defun my/lsp-java-copy-hover-value ()
+    (interactive)
+    (let* ((params (lsp--text-document-position-params))
+           (response (lsp-request "textDocument/hover" params))
+           (contents (gethash "contents" response)))
+      (if contents
+          (kill-new (gethash "value" contents)))))
+  (defun my/lsp-java-show-definition-maven-coorinate ()
+    "Get defin Maven coordinate from input-string."
+    (interactive)
+    (let* ((response (car (lsp-request "textDocument/definition" (lsp--text-document-position-params))))
+           (uri (gethash "uri" response))
+           (mvn-group-id (and (string-match "=\\/maven.groupId=\\(/[^=]+\\)=" uri)
+                              (match-string 1 uri)))
+           (mvn-artifact-id (and (string-match "=\\/maven.artifactId=\\(/[^=]+\\)=" uri)
+                                 (match-string 1 uri)))
+           (mvn-version (and (string-match "=\\/maven.version=\\(/[^=]+\\)=" uri)
+                             (match-string 1 uri))))
+      (message (if (and mvn-group-id mvn-artifact-id mvn-version)
+                   (concat (substring mvn-group-id 1) ":"
+                           (substring mvn-artifact-id 1) ":"
+                           (substring mvn-version 1))
+                 "Error: Cannot parse Maven Coordinate")))))
+(setq! lsp-ui-doc-show-with-cursor t
+       lsp-ui-doc-position 'top)
 
 (after! spell-fu
   (let ((dict (spell-fu-get-ispell-dictionary "english"))

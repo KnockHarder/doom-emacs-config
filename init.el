@@ -11,6 +11,7 @@
        snippets
        :emacs
        (ibuffer +icons)
+       (dired)
        :lang
        emacs-lisp
        (json +lsp)

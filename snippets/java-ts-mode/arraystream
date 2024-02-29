@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name:
+# uuid:
+# key: arraystream
+# condition: t
+# --
+Arrays.stream($0)

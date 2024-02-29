@@ -16,7 +16,7 @@
   (aw-scope 'frame)
   )
 
-;; my window functions
+;; my window/frame functions
 (defun my/open-side-window (buf &optional position)
   (interactive "bSelect Buffer:")
   (unless position
@@ -75,6 +75,11 @@
                  '-))))
 (global-set-key (kbd "C-M-v") #'my/scroll-window-up)
 (global-set-key (kbd "C-M-S-v") #'my/scroll-window-down)
+(defun my/open-buffer-new-maximum-frame (buffer &optional position)
+  (interactive "bSelect Buffer:")
+  (with-selected-frame (make-frame)
+    (switch-to-buffer buffer)
+    (set-frame-parameter (selected-frame) 'fullscreen 'maximized)))
 
 ;; region
 (use-package! expand-region
@@ -161,6 +166,20 @@
     )
   )
 
+(use-package! copilot
+  :defer
+  :hook
+  (java-ts-mode . copilot-mode)
+  :bind
+  (:map copilot-mode-map
+        ("C-c TAB TAB" . #'copilot-complete)
+        ("C-c TAB a" . #'copilot-accept-completion)
+        ("C-c TAB w" . #'copilot-accept-completion-by-word)
+        ("C-c TAB l" . #'copilot-accept-completion-by-line)
+        ("C-c TAB h" . #'copilot-accept-completion-by-paragraph)
+        ("C-c TAB n" . #'copilot-next-completion)
+        ("C-c TAB p" . #'copilot-previous-completion)))
+
 ;; code
 (setq project-find-functions '(project-try-vc project-projectile))
 (after! vc-git
@@ -209,28 +228,37 @@
 
 (add-to-list 'auto-mode-alist '("\\.java\\'" . java-ts-mode))
 (add-hook! java-ts-mode #'lsp)
+(setq-hook! 'java-ts-mode read-process-output-max (* 1024 (* 1024 3)))
 (use-package! lsp-java
   :custom
   (lsp-java-server-install-dir
    (expand-file-name "language-server/java/jdtls/" user-emacs-directory))
-  (lsp-response-timeout 3)
   :hook
-  (java-mode . subword-mode)
-  (java-mode . (lambda ()
-                 (setq read-process-output-max (* 1024 (* 1024 3)))))
+  (java-ts-mode . subword-mode)
   :bind
   (:map lsp-mode-map
         ("C-c c p r" . #'lsp-ui-peek-find-references)
         ("C-c c p d" . #'lsp-ui-doc-glance)
         ("C-c c p i" . #'lsp-ui-doc-show))
   :config
-  (defun my/lsp-java-copy-hover-value ()
-    (interactive)
+  (defun my/lsp-java-hover-value ()
     (let* ((params (lsp--text-document-position-params))
            (response (lsp-request "textDocument/hover" params))
            (contents (gethash "contents" response)))
       (if contents
-          (kill-new (gethash "value" contents)))))
+          (gethash "value" contents)
+        nil)))
+  (defun my/lsp-java-copy-hover-value ()
+    (interactive)
+    (kill-new (my/lsp-java-hover-value)))
+  (defun my/lsp-java-copy-method-reference-without-params ()
+    (interactive)
+    (let* ((hover-value (my/lsp-java-hover-value))
+           (matches (string-match "\\([A-Z][.a-zA-Z0-9]*\\)\\.\\([a-z][a-zA-Z0-9]*\\)(" hover-value))
+           (class (match-string 1 hover-value))
+           (method (match-string 2 hover-value)))
+      (if (and class method)
+          (kill-new (concat class "." method)))))
   (defun my/lsp-java-show-definition-maven-coorinate ()
     "Get defin Maven coordinate from input-string."
     (interactive)
@@ -247,8 +275,9 @@
                            (substring mvn-artifact-id 1) ":"
                            (substring mvn-version 1))
                  "Error: Cannot parse Maven Coordinate")))))
-(setq! lsp-ui-doc-show-with-cursor t
-       lsp-ui-doc-position 'top)
+(after! lsp-ui
+  (setq-default lsp-ui-doc-show-with-cursor t
+                lsp-ui-doc-position 'top))
 
 (after! spell-fu
   (let ((dict (spell-fu-get-ispell-dictionary "english"))

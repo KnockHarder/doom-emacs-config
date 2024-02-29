@@ -214,70 +214,30 @@
         ("C-c M-}" . #'python-nav-forward-defun)
         ("C-c M-{" . #'python-nav-backward-defun)
         ))
-(defun my/setup-pipenv ()
-  "set python paths for pipenv."
-  (let ((python-path (string-trim (shell-command-to-string "pipenv run which python")))
-        )
-    (setq-local python-interpreter python-path)
-    (setq-local pythonic-interpreter python-path)
-    (setq-local lsp-pyright-python-executable-cmd python-path)
-    (shell-command "pipenv run pip install isort pyflakes flake8")
-    )
-  )
 (add-hook! pipenv-mode #'my/setup-pipenv)
 
 (add-to-list 'auto-mode-alist '("\\.java\\'" . java-ts-mode))
-(add-hook! java-ts-mode #'lsp)
 (setq-hook! 'java-ts-mode read-process-output-max (* 1024 (* 1024 3)))
-(use-package! lsp-java
+(setq-default subword-mode t)
+(use-package! lsp-bridge
   :custom
-  (lsp-java-server-install-dir
-   (expand-file-name "language-server/java/jdtls/" user-emacs-directory))
-  :hook
-  (java-ts-mode . subword-mode)
-  :bind
-  (:map lsp-mode-map
-        ("C-c c p r" . #'lsp-ui-peek-find-references)
-        ("C-c c p d" . #'lsp-ui-doc-glance)
-        ("C-c c p i" . #'lsp-ui-doc-show))
+  (lsp-bridge-python-command (expand-file-name "venv/bin/python3" user-emacs-directory))
   :config
-  (defun my/lsp-java-hover-value ()
-    (let* ((params (lsp--text-document-position-params))
-           (response (lsp-request "textDocument/hover" params))
-           (contents (gethash "contents" response)))
-      (if contents
-          (gethash "value" contents)
-        nil)))
-  (defun my/lsp-java-copy-hover-value ()
-    (interactive)
-    (kill-new (my/lsp-java-hover-value)))
-  (defun my/lsp-java-copy-method-reference-without-params ()
-    (interactive)
-    (let* ((hover-value (my/lsp-java-hover-value))
-           (matches (string-match "\\([A-Z][.a-zA-Z0-9]*\\)\\.\\([a-z][a-zA-Z0-9]*\\)(" hover-value))
-           (class (match-string 1 hover-value))
-           (method (match-string 2 hover-value)))
-      (if (and class method)
-          (kill-new (concat class "." method)))))
-  (defun my/lsp-java-show-definition-maven-coorinate ()
-    "Get defin Maven coordinate from input-string."
-    (interactive)
-    (let* ((response (car (lsp-request "textDocument/definition" (lsp--text-document-position-params))))
-           (uri (gethash "uri" response))
-           (mvn-group-id (and (string-match "=\\/maven.groupId=\\(/[^=]+\\)=" uri)
-                              (match-string 1 uri)))
-           (mvn-artifact-id (and (string-match "=\\/maven.artifactId=\\(/[^=]+\\)=" uri)
-                                 (match-string 1 uri)))
-           (mvn-version (and (string-match "=\\/maven.version=\\(/[^=]+\\)=" uri)
-                             (match-string 1 uri))))
-      (message (if (and mvn-group-id mvn-artifact-id mvn-version)
-                   (concat (substring mvn-group-id 1) ":"
-                           (substring mvn-artifact-id 1) ":"
-                           (substring mvn-version 1))
-                 "Error: Cannot parse Maven Coordinate")))))
-(after! lsp-ui
-  (setq-default lsp-ui-doc-show-with-cursor t
-                lsp-ui-doc-position 'top))
+  (setq lsp-bridge-enable-log nil)
+  (global-lsp-bridge-mode)
+  (add-hook 'before-save-hook (lambda ()
+                                (untabify (point-min) (point-max))))
+  (define-key general-override-mode-map (kbd "C-c c f") nil)
+  :bind
+  (:map lsp-bridge-mode-map
+        ("M-." . #'lsp-bridge-find-def)
+        ("C-c l d" . #'lsp-bridge-show-documentation)
+        ("C-c l p" . #'lsp-bridge-peek)
+        ("C-c l r" . #'lsp-bridge-find-references)
+        ("C-c l i" . #'lsp-bridge-find-impl)
+        ("C-c c f" . #'lsp-bridge-code-format)
+        ("C-c c a" . #'lsp-bridge-code-action)
+        ("C-c c r" . #'lsp-bridge-rename)))
 
 (after! spell-fu
   (let ((dict (spell-fu-get-ispell-dictionary "english"))

@@ -14,20 +14,19 @@
        (dired)
        :lang
        emacs-lisp
-       (json +lsp)
+       json
        markdown
-       (python +lsp +pyenv)
-       (java +lsp)
+       (python +pyenv)
+       (java)
        kotlin
        org
        :tools
        (magit)
-       (lsp)
        (editorconfig)
        :ui
        doom
        doom-dashboard
        workspaces
        modeline
-       (treemacs +lsp)
+       treemacs
        )

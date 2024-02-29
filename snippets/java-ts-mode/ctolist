@@ -1,7 +1,0 @@
-# -*- mode: snippet -*-
-# name:
-# uuid:
-# key: tolist
-# condition: t
-# --
-Collectors$0.toList()

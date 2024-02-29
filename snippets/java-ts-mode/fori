@@ -1,7 +1,9 @@
 # -*- mode: snippet -*-
 # name:
 # uuid:
-# key: tolist
+# key: fori
 # condition: t
 # --
-collect(Collectors.toList());$0
+for (int ${1:i} = 0; i < ${2:0}; i++) {
+    $0
+}

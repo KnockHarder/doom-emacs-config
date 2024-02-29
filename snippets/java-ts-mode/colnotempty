@@ -1,7 +1,7 @@
 # -*- mode: snippet -*-
 # name:
 # uuid:
-# key: tolist
+# key: colnotempty
 # condition: t
 # --
-collect(Collectors.toList());$0
+CollectionUtils.isNotEmpty($0)

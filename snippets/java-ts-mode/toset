@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Collect stream to set
+# uuid: 8419689B-525C-4DB7-8B1F-E776664E0FF1
+# key: toset
+# condition: t
+# --
+collect(Collectors.toSet());$0

@@ -1,7 +1,7 @@
 # -*- mode: snippet -*-
-# name:
-# uuid:
-# key: newLogger
+# name: declare log variable
+# uuid: EBDBDE0F-F8AF-4D25-9245-E6E387AF7ED0
+# key: newlogger
 # condition: t
 # --
 final Logger log = LoggerFactory$0.getLogger(${1:`(file-name-sans-extension (file-name-nondirectory (buffer-file-name)))`}.class);

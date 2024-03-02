@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: Create post construct method for bean class
+# uuid: 71CDF694-FCD5-4524-BD35-2594B69EC853
+# key: postconstruct
+# condition: t
+# --
+@PostConstruct
+private void init() {
+    $0
+}

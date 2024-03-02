@@ -1,6 +1,6 @@
 # -*- mode: snippet -*-
-# name:
-# uuid:
+# name: Create stream for array
+# uuid: C0AD1565-FF1C-4BCB-BCDE-66D048606949
 # key: arraystream
 # condition: t
 # --

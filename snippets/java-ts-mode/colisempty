@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Is collection empty.
+# uuid: A022ABB0-A71A-4FE1-84B3-3966CFCF871A
+# key: colisempty
+# condition: t
+# --
+CollectionUtils.isEmpty($0)

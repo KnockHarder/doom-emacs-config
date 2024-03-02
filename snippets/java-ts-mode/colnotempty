@@ -1,6 +1,6 @@
 # -*- mode: snippet -*-
-# name:
-# uuid:
+# name: Is collection not empty
+# uuid: E9E6CB31-4BF9-48AC-A4DE-79265701E942
 # key: colnotempty
 # condition: t
 # --

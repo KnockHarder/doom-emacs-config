@@ -1,6 +1,6 @@
 # -*- mode: snippet -*-
-# name:
-# uuid:
+# name: Collect stream to list
+# uuid: 994139BB-CA32-4B30-9AC8-0F02ACFFF96D
 # key: tolist
 # condition: t
 # --

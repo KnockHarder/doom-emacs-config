@@ -25,6 +25,7 @@
        (lsp)
        (editorconfig)
        :ui
+       modeline
        doom
        doom-dashboard
        workspaces

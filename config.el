@@ -1,10 +1,12 @@
 ;;; init.el -- init
 
-;; key bindings and theme
+;; key bindings and appearance
 (global-set-key (kbd "s-k") 'kill-current-buffer)
+(global-set-key (kbd "C-x 4 o") #'ace-window)
 (setq doom-theme 'doom-dracula
       doom-font (font-spec :size 14)
       doom-variable-pitch-font (font-spec :size 16))
+(setq! doom-modeline-buffer-file-name-style 'truncate-with-project)
 
 ;; maximum frame after UI initialized
 (add-to-list 'default-frame-alist '(width . 120))
@@ -98,9 +100,9 @@
   :custom
   (default-input-method "rime")
   (rime-show-candidate 'posframe)
-  (rime-librime-root (expand-file-name "librime/dist" user-emacs-directory))
-  (rime-emacs-module-header-root (expand-file-name "librime/manual-headers"
-                                                   user-emacs-directory))
+  (rime-librime-root (expand-file-name "librime/" user-emacs-directory))
+  (rime-emacs-module-header-root (expand-file-name "../../../include"
+                                                   invocation-directory))
   (rime-user-data-dir "~/Library/Rime")
   (rime-disable-predicates '(rime-predicate-space-after-cc-p
                              rime-predicate-after-alphabet-char-p
@@ -115,8 +117,7 @@
     (activate-input-method default-input-method))
   (add-hook 'markdown-mode-hook 'activate-rime)
   (add-hook 'plantuml-mode-hook 'activate-rime)
-  (add-hook 'git-commit-mode-hook 'activate-rime)
-  )
+  (add-hook 'git-commit-mode-hook 'activate-rime))
 
 ;; gpt config
 (let* ((local-server "127.0.0.1:8080")
@@ -167,9 +168,11 @@
   )
 
 (use-package! copilot
-  :defer
+  :commands copilot--on-doc-focus
   :hook
   (java-ts-mode . copilot-mode)
+  (emacs-lisp-mode . copilot-mode)
+  (protobuf-mode . copilot-mode)
   :bind
   (:map copilot-mode-map
         ("C-c TAB TAB" . #'copilot-complete)
@@ -228,19 +231,28 @@
 
 (add-to-list 'auto-mode-alist '("\\.java\\'" . java-ts-mode))
 (add-hook! java-ts-mode #'lsp)
+(setq! lsp-modeline-code-actions-enable nil)
 (setq-hook! 'java-ts-mode read-process-output-max (* 1024 (* 1024 3)))
+(global-subword-mode 1)
 (use-package! lsp-java
   :custom
   (lsp-java-server-install-dir
    (expand-file-name "language-server/java/jdtls/" user-emacs-directory))
-  :hook
-  (java-ts-mode . subword-mode)
+  (lsp-java-save-actions-organize-imports t)
+  (lsp-java-cleanup-actions-on-save t)
+  (lsp-disabled-clients '(semgrep-ls))
   :bind
   (:map lsp-mode-map
-        ("C-c c p r" . #'lsp-ui-peek-find-references)
-        ("C-c c p d" . #'lsp-ui-doc-glance)
-        ("C-c c p i" . #'lsp-ui-doc-show))
+        ("C-c c f" . #'lsp-format-region)
+        ("C-c l p" . #'lsp-ui-peek-find-references)
+        ("C-c l d" . #'lsp-ui-doc-show)
+        ("C-c l i" . #'lsp-ui-peek-find-implementation)
+        ("M-RET" . #'lsp-execute-code-action))
   :config
+  (setq! lsp-ui-doc-enable nil)
+  (add-hook 'before-save-hook (lambda ()
+                                (untabify (point-min) (point-max))))
+  (define-key general-override-mode-map (kbd "C-c c f") nil)
   (defun my/lsp-java-hover-value ()
     (let* ((params (lsp--text-document-position-params))
            (response (lsp-request "textDocument/hover" params))
@@ -275,9 +287,6 @@
                            (substring mvn-artifact-id 1) ":"
                            (substring mvn-version 1))
                  "Error: Cannot parse Maven Coordinate")))))
-(after! lsp-ui
-  (setq-default lsp-ui-doc-show-with-cursor t
-                lsp-ui-doc-position 'top))
 
 (after! spell-fu
   (let ((dict (spell-fu-get-ispell-dictionary "english"))
@@ -304,6 +313,5 @@
                  :render (gts-buffer-render))))
 
 (setq! org-image-actual-width nil)
-
 ;; browser
 (setq! browse-url-browser-function #'xwidget-webkit-browse-url)

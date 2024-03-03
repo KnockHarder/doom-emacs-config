@@ -313,5 +313,12 @@
                  :render (gts-buffer-render))))
 
 (setq! org-image-actual-width nil)
+
 ;; browser
 (setq! browse-url-browser-function #'xwidget-webkit-browse-url)
+
+;; shell
+(defun my/setup-shell-mode ()
+  (when (string-match-p "\\*.*Shell Command.*\\*" (buffer-name))
+    (toggle-truncate-lines 0)))
+(add-hook! shell-mode #'my/setup-shell-mode)

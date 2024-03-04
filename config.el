@@ -188,14 +188,31 @@
 (after! vc-git
   (add-to-list 'projectile-project-root-functions #'vc-git-root))
 (after! projectile
+  (defun my/projectile-find-file--default-value ()
+    (if (eq major-mode 'java-ts-mode)
+        (let* ((node (treesit-node-at (point)))
+               (node-name (treesit-node-field-name node))
+               (parent-type (treesit-node-type (treesit-node-parent node))))
+          (cond
+           ((member parent-type '("generic_type" "type_arguments"))
+            (treesit-node-text node t))
+           ((string-match-p "type" node-name)
+            (treesit-node-text node t))
+           ((and (string-equal parent-type "method_invocation")
+                 (string-equal node-name "object"))
+            (downcase (treesit-node-text node t)))
+           (t
+            nil)))
+      (let ((symbol (thing-at-point 'symbol)))
+        (if symbol
+            (downcase symbol)
+          nil))))
   (defun my/projectile-find-file (&optional invalidate-cache)
     (interactive "P")
     (projectile-maybe-invalidate-cache invalidate-cache)
     (let* ((project-root (projectile-acquire-root))
            (symbol (thing-at-point 'symbol))
-           (default-value (if symbol
-                              (downcase symbol)
-                            nil))
+           (default-value (my/projectile-find-file--default-value))
            (prompt (if default-value
                        (format "Find file (default %s): " default-value)
                      "Find file: "))
@@ -206,8 +223,7 @@
       (when file
         (find-file  (expand-file-name file project-root))
         (run-hooks 'projectile-find-file-hook))))
-  (define-key projectile-mode-map (kbd "C-c p f") 'my/projectile-find-file)
-  )
+  (define-key projectile-mode-map (kbd "C-c p f") 'my/projectile-find-file))
 
 (setq gcmh-high-cons-threshold (* 1024 (* 1024 16)))
 (use-package! python
@@ -247,7 +263,9 @@
         ("C-c l p" . #'lsp-ui-peek-find-references)
         ("C-c l d" . #'lsp-ui-doc-show)
         ("C-c l i" . #'lsp-ui-peek-find-implementation)
-        ("M-RET" . #'lsp-execute-code-action))
+        ("M-RET" . #'lsp-execute-code-action)
+        ("C-c C-n" . #'treesit-end-of-defun)
+        ("C-c C-p" . #'treesit-beginning-of-defun))
   :config
   (setq! lsp-ui-doc-enable nil)
   (add-hook 'before-save-hook (lambda ()
@@ -270,7 +288,8 @@
            (class (match-string 1 hover-value))
            (method (match-string 2 hover-value)))
       (if (and class method)
-          (kill-new (concat class "." method)))))
+          (kill-new (concat class "." method))
+        (message "Copied class name: %s" class))))
   (defun my/lsp-java-show-definition-maven-coorinate ()
     "Get defin Maven coordinate from input-string."
     (interactive)
@@ -286,7 +305,19 @@
                    (concat (substring mvn-group-id 1) ":"
                            (substring mvn-artifact-id 1) ":"
                            (substring mvn-version 1))
-                 "Error: Cannot parse Maven Coordinate")))))
+                 "Error: Cannot parse Maven Coordinate"))))
+  (defun my/java-copy-outter-class-name-at-point ()
+    (interactive)
+    (let ((node (treesit-node-at (point))))
+      (while (and (treesit-node-p node)
+                  (not (string-equal (treesit-node-type node) "class_declaration")))
+        (setq node (treesit-node-parent node)))
+      (when (treesit-node-p node)
+        (let* ((class-name-node (treesit-node-child-by-field-name node "name"))
+               (content (treesit-node-text class-name-node)))
+          (if content
+              (kill-new content)
+            (message "Cannot find and class name from point" content)))))))
 
 (after! spell-fu
   (let ((dict (spell-fu-get-ispell-dictionary "english"))

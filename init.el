@@ -19,7 +19,7 @@
        (python +lsp +pyenv)
        (java +lsp)
        kotlin
-       org
+       (org +present)
        :tools
        (magit)
        (lsp)

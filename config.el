@@ -51,32 +51,6 @@
                           (window-list))))
   )
 (global-set-key (kbd "C-x 1") #'my/delete-other-on-side-windows)
-(defun my/read-window ()
-  "Select not side window in current frame."
-  (let* ((window-alist (mapcar (lambda (w)
-                                 (cons (buffer-name (window-buffer w)) w))
-                               (window-list)))
-         (selected (assoc (completing-read "Select window: " (mapcar 'car window-alist)
-                                           nil t nil nil
-                                           (buffer-name (window-buffer (next-window))))
-                          window-alist)))
-    (cdr selected)))
-(defun my/scroll-window-up (window &optional ARG)
-  "Select not side window in current frame and scroll down.
- Like scroll-up-command."
-  (interactive (list (my/read-window) current-prefix-arg))
-  (with-selected-window window
-    (scroll-up ARG)))
-(defun my/scroll-window-down (window &optional ARG)
-  "Select not side window in current frame and scroll down.
- Like scroll-up-command."
-  (interactive (list (my/read-window) current-prefix-arg))
-  (with-selected-window window
-    (scroll-up (if ARG
-                   (- ARG)
-                 '-))))
-(global-set-key (kbd "C-M-v") #'my/scroll-window-up)
-(global-set-key (kbd "C-M-S-v") #'my/scroll-window-down)
 (defun my/open-buffer-new-maximum-frame (buffer &optional position)
   (interactive "bSelect Buffer:")
   (with-selected-frame (make-frame)
@@ -173,9 +147,15 @@
   (java-ts-mode . copilot-mode)
   (emacs-lisp-mode . copilot-mode)
   (protobuf-mode . copilot-mode)
+  :config
+  (defun copilot-complete-dwim ()
+    (interactive)
+    (if (eq (overlay-buffer copilot--overlay) (current-buffer))
+        (copilot-accept-completion)
+      (copilot-complete)))
   :bind
   (:map copilot-mode-map
-        ("C-c TAB TAB" . #'copilot-complete)
+        ("C-c TAB TAB" . #'copilot-complete-dwim)
         ("C-c TAB a" . #'copilot-accept-completion)
         ("C-c TAB w" . #'copilot-accept-completion-by-word)
         ("C-c TAB l" . #'copilot-accept-completion-by-line)
@@ -189,10 +169,12 @@
   (add-to-list 'projectile-project-root-functions #'vc-git-root))
 (after! projectile
   (defun my/projectile-find-file--default-value ()
-    (if (eq major-mode 'java-ts-mode)
-        (let* ((node (treesit-node-at (point)))
-               (node-name (treesit-node-field-name node))
-               (parent-type (treesit-node-type (treesit-node-parent node))))
+    (when (eq major-mode 'java-ts-mode)
+      (let* ((node (treesit-node-at (point)))
+             (node-name (treesit-node-field-name node))
+             (parent-type (treesit-node-type (treesit-node-parent node))))
+        (when (and (treesit-node-p node)
+                   node-name parent-type)
           (cond
            ((member parent-type '("generic_type" "type_arguments"))
             (treesit-node-text node t))
@@ -202,11 +184,7 @@
                  (string-equal node-name "object"))
             (downcase (treesit-node-text node t)))
            (t
-            nil)))
-      (let ((symbol (thing-at-point 'symbol)))
-        (if symbol
-            (downcase symbol)
-          nil))))
+            nil))))))
   (defun my/projectile-find-file (&optional invalidate-cache)
     (interactive "P")
     (projectile-maybe-invalidate-cache invalidate-cache)
@@ -316,7 +294,9 @@
         (let* ((class-name-node (treesit-node-child-by-field-name node "name"))
                (content (treesit-node-text class-name-node)))
           (if content
-              (kill-new content)
+              (progn
+                (kill-new content)
+                (message "Copied class name: %s" content))
             (message "Cannot find and class name from point" content)))))))
 
 (after! spell-fu
@@ -353,3 +333,9 @@
   (when (string-match-p "\\*.*Shell Command.*\\*" (buffer-name))
     (toggle-truncate-lines 0)))
 (add-hook! shell-mode #'my/setup-shell-mode)
+
+;; local config files
+(defcustom local-config-files (list) "Local config files."
+  :type '(repeat string))
+(dolist (file local-config-files)
+  (load file))

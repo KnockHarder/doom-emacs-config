@@ -72,12 +72,14 @@
     (with-current-buffer buffer
       (toggle-truncate-lines 0)
       (display-line-numbers-mode 1)))
-  (when-let ((buffer (get-buffer flycheck-error-list-buffer)))
+  (when-let ((name (bound-and-true-p flycheck-error-list-buffer))
+             (buffer (get-buffer name)))
     (my/open-side-window buffer 'bottom))
   (when-let* ((buffer (get-buffer "*lsp-log*"))
               (window (my/open-side-window buffer 'top)))
     (with-current-buffer buffer
       (set-window-point window (point-max)))))
+(add-hook! 'doom-first-buffer-hook #'my/open-side-info-windows)
 
 ;; region
 (use-package! expand-region

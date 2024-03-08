@@ -17,6 +17,8 @@
   :custom
   (aw-scope 'frame)
   )
+(setq-hook! 'messages-buffer-mode-hook truncate-lines nil)
+(add-hook! messages-buffer-mode #'display-line-numbers-mode)
 
 ;; my window/frame functions
 (defun my/open-side-window (buf &optional position)
@@ -281,10 +283,10 @@
                (message "Copied class name: %s" content))
       (message "Cannot find and class name from point" content))))
 
+;; spell and translate
 (after! spell-fu
   (when-let ((dict (spell-fu-get-ispell-dictionary "english")))
     (setq-default spell-fu-dictionaries `(,dict))))
-
 (after! ispell
   (setq-default ispell-dictionary "english"))
 
@@ -301,7 +303,26 @@
                                 (gts-youdao-dict-engine))
                  :render (gts-buffer-render))))
 
-(setq! org-image-actual-width nil)
+;; doc
+(use-package! org
+  :custom
+  (org-image-actual-width nil)
+  :bind
+  (:map org-mode-map
+        ("C-c l TAB" . #'org-fold-show-subtree)
+        ("C-c l <backtab>" . #'org-fold-hide-subtree)))
+(use-package! org-tree-slide
+  :init
+  (defvar-local org-tree-slide-pre-line-number-mode nil)
+  (defun org-tree-slide-frobide-line-number ()
+    (if org-tree-slide-mode
+        (progn
+          (setq-local org-tree-slide-pre-line-number-mode display-line-numbers-mode)
+          (display-line-numbers-mode 0))
+      (display-line-numbers-mode org-tree-slide-pre-line-number-mode))
+    )
+  :hook
+  (org-tree-slide-mode . org-tree-slide-frobide-line-number))
 
 ;; browser
 (setq! browse-url-browser-function #'xwidget-webkit-browse-url)

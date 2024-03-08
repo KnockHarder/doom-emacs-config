@@ -17,8 +17,6 @@
   :custom
   (aw-scope 'frame)
   )
-(setq-hook! 'messages-buffer-mode-hook truncate-lines nil)
-(add-hook! messages-buffer-mode #'display-line-numbers-mode)
 
 ;; my window/frame functions
 (defun my/open-side-window (buf &optional position)
@@ -68,7 +66,11 @@
 (defun my/open-side-info-windows ()
   "Open info buffers at sides."
   (interactive)
-  (my/open-side-window (messages-buffer) 'left)
+  (when-let ((buffer (messages-buffer)))
+    (my/open-side-window buffer 'left)
+    (with-current-buffer buffer
+      (toggle-truncate-lines 0)
+      (display-line-numbers-mode 1)))
   (when-let ((buffer (get-buffer flycheck-error-list-buffer)))
     (my/open-side-window buffer 'bottom))
   (when-let ((lsp-log-buffer (get-buffer "*lsp-log*")))

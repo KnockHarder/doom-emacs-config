@@ -1,24 +1,24 @@
 ;;; init.el -- init
 
-;; key bindings and appearance
-(global-set-key (kbd "s-k") 'kill-current-buffer)
-(global-set-key (kbd "C-x 4 o") #'ace-window)
+;; key bindings and system settings
 (setq doom-theme 'doom-dracula
       doom-font (font-spec :size 14)
       doom-variable-pitch-font (font-spec :size 16))
 (setq! doom-modeline-buffer-file-name-style 'truncate-with-project)
-
-;; maximum frame after UI initialized
+(setq gcmh-high-cons-threshold (* 1024 (* 1024 16)))
+(global-subword-mode 1)
 (add-to-list 'default-frame-alist '(width . 120))
 (add-to-list 'default-frame-alist '(height . 40))
 (add-hook 'doom-init-ui-hook #'toggle-frame-maximized)
+(global-set-key (kbd "s-k") 'kill-current-buffer)
+
+;; window and frame
 (use-package! ace-window
   :commands ace-window
   :custom
   (aw-scope 'frame)
-  )
-
-;; my window/frame functions
+  :bind
+  ("C-x 4 o" . ace-window))
 (defun my/open-side-window (buf &optional position)
   (interactive "bSelect Buffer:")
   (unless position
@@ -210,7 +210,6 @@
         (run-hooks 'projectile-find-file-hook))))
   (define-key projectile-mode-map (kbd "C-c p f") 'projectile-find-file-with-symboal-at-point))
 
-(setq gcmh-high-cons-threshold (* 1024 (* 1024 16)))
 (use-package! python
   :commands python python-mode
   :bind
@@ -218,24 +217,25 @@
         ("C-c M-}" . #'python-nav-forward-defun)
         ("C-c M-{" . #'python-nav-backward-defun)
         ))
-(defun my/setup-pipenv ()
-  "set python paths for pipenv."
-  (let ((python-path (string-trim (shell-command-to-string "pipenv run which python")))
-        )
-    (setq-local python-interpreter python-path)
-    (setq-local pythonic-interpreter python-path)
-    (setq-local lsp-pyright-python-executable-cmd python-path)
-    (shell-command "pipenv run pip install isort pyflakes flake8")
-    )
-  )
-(add-hook! pipenv-mode #'my/setup-pipenv)
+(use-package! pipenv
+  :commands pipenv-mode
+  :init
+  (defun my/setup-pipenv ()
+    "set python paths for pipenv."
+    (let ((python-path (string-trim (shell-command-to-string "pipenv run which python"))))
+      (setq-local python-interpreter python-path)
+      (setq-local pythonic-interpreter python-path)
+      (setq-local lsp-pyright-python-executable-cmd python-path)
+      (shell-command "pipenv run pip install isort pyflakes flake8")))
+  :hook
+  (pipenv-mode . my/setup-pipenv))
 
 (add-to-list 'auto-mode-alist '("\\.java\\'" . java-ts-mode))
 (add-hook! java-ts-mode #'lsp)
 (setq! lsp-modeline-code-actions-enable nil)
 (setq-hook! 'java-ts-mode read-process-output-max (* 1024 (* 1024 3)))
-(global-subword-mode 1)
 (use-package! lsp-java
+  :commands lsp
   :custom
   (lsp-java-server-install-dir
    (expand-file-name "language-server/java/jdtls/" user-emacs-directory))
@@ -325,6 +325,7 @@
 
 ;; doc
 (use-package! org
+  :commands org-mode
   :custom
   (org-image-actual-width nil)
   :bind
@@ -332,6 +333,7 @@
         ("C-c l TAB" . #'org-fold-show-subtree)
         ("C-c l <backtab>" . #'org-fold-hide-subtree)))
 (use-package! org-tree-slide
+  :commands org-tree-slide-mode
   :init
   (defvar-local org-tree-slide-pre-line-number-mode nil)
   (defun org-tree-slide-frobide-line-number ()
@@ -348,10 +350,15 @@
 (setq! browse-url-browser-function #'xwidget-webkit-browse-url)
 
 ;; shell
-(defun my/setup-shell-mode ()
-  (when (string-match-p "\\*.*Shell Command.*\\*" (buffer-name))
-    (toggle-truncate-lines 0)))
-(add-hook! shell-mode #'my/setup-shell-mode)
+(use-package shell
+  :commands shell-mode
+  :init
+  (defun my/setup-shell-mode ()
+    (when (and (string-match-p "\\*.*Shell Command.*\\*" (buffer-name))
+               truncate-lines)
+      (toggle-truncate-lines 0)))
+  :hook
+  (shell-mode . my/setup-shell-mode))
 
 ;; local config files
 (defcustom local-config-files (list) "Local config files."

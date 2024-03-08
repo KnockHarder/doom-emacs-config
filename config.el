@@ -41,7 +41,8 @@
                                      (window-height . ,window-height)
                                      (dedicated . t)
                                      (no-other-window . t))))))
-    (set-window-parameter win 'no-other-window t)))
+    (set-window-parameter win 'no-other-window t)
+    win))
 (defun my/delete-other-not-side-windows ()
   (interactive)
   (let* ((main-window (window-main-window))
@@ -73,8 +74,10 @@
       (display-line-numbers-mode 1)))
   (when-let ((buffer (get-buffer flycheck-error-list-buffer)))
     (my/open-side-window buffer 'bottom))
-  (when-let ((lsp-log-buffer (get-buffer "*lsp-log*")))
-    (my/open-side-window lsp-log-buffer 'top)))
+  (when-let* ((buffer (get-buffer "*lsp-log*"))
+              (window (my/open-side-window buffer 'top)))
+    (with-current-buffer buffer
+      (set-window-point window (point-max)))))
 
 ;; region
 (use-package! expand-region

@@ -67,11 +67,12 @@
 (defun my/open-side-info-windows ()
   "Open info buffers at sides."
   (interactive)
-  (when-let ((buffer (messages-buffer)))
-    (my/open-side-window buffer 'left)
+  (when-let ((buffer (messages-buffer))
+             (window (my/open-side-window buffer 'left)))
     (with-current-buffer buffer
       (toggle-truncate-lines 0)
-      (display-line-numbers-mode 1)))
+      (display-line-numbers-mode 1)
+      (set-window-point window (point-max))))
   (when-let ((name (bound-and-true-p flycheck-error-list-buffer))
              (buffer (get-buffer name)))
     (my/open-side-window buffer 'bottom))
@@ -91,7 +92,9 @@
   :commands magit--handle-bookmark
   :config
   (setq-default magit-diff-refine-hunk 'all)
-  )
+  :bind
+  (:map magit-mode-map
+        ("C-c o l" . #'browse-url)))
 
 ;; rime
 (use-package! rime
@@ -250,13 +253,16 @@
         ("C-c l p" . #'lsp-ui-peek-find-references)
         ("C-c l d" . #'lsp-ui-doc-show)
         ("C-c l i" . #'lsp-ui-peek-find-implementation)
+        ("C-c l I" . #'lsp-find-implementation)
+        ("C-c l r" . #'lsp-find-references)
+        ("C-c l s" . #'lsp-ui-find-workspace-symbol)
         ("M-RET" . #'lsp-execute-code-action)
         ("C-c C-n" . #'treesit-end-of-defun)
         ("C-c C-p" . #'treesit-beginning-of-defun))
   :config
   (setq! lsp-ui-doc-enable nil)
   (add-hook 'before-save-hook (lambda ()
-                                (untabify (point-min) (point-max))))
+                                (untabify (point-min) (point-max))) nil t)
   (define-key general-override-mode-map (kbd "C-c c f") nil)
   (defun my/lsp-java-hover-value ()
     (when-let* ((params (lsp--text-document-position-params))
@@ -303,7 +309,42 @@
               (content (treesit-node-text class-name-node t)))
         (progn (kill-new content)
                (message "Copied class name: %s" content))
-      (message "Cannot find and class name from point" content))))
+      (message "Cannot find and class name from point" content)))
+  (defun my/lsp-java-format-changed-lines (&optional buffer)
+    "Lsp-format changed lines in the buffer."
+    (interactive)
+    (if (not buffer)
+        (setq buffer (current-buffer)))
+    (let ((old-file (buffer-file-name buffer))
+          (new-file (diff-file-local-copy buffer))
+          (diff-line-regions (list)))
+      (unless old-file
+        (error "Buffer is not visiting a file"))
+      (with-temp-buffer
+        (shell-command (format "diff %s %s" old-file new-file) (current-buffer))
+        (goto-char (point-min))
+        (while (re-search-forward "^[0-9,]+[ac]\\([0-9,]+\\)$" nil t)
+          (push (match-string 1) diff-line-regions)))
+      (with-current-buffer buffer
+        (let ((current-line (progn (goto-char (point-min))
+                                   1)))
+          (dolist (line-region diff-line-regions)
+            (let* ((lines (split-string line-region ","))
+                   (start-line (string-to-number (car lines)))
+                   (end-line (if (> (length lines) 1)
+                                 (string-to-number (cadr lines))
+                               start-line))
+                   (start (progn
+                            (forward-line (- start-line current-line))
+                            (beginning-of-line)
+                            (point)))
+                   (end (progn
+                          (forward-line (- end-line start-line))
+                          (end-of-line)
+                          (point))))
+              (lsp-format-region start end)
+              (setq current-line end-line)))))))
+  (add-hook 'before-save-hook #'my/lsp-java-format-changed-lines 0 t))
 
 ;; spell and translate
 (after! spell-fu
@@ -365,5 +406,6 @@
 ;; local config files
 (defcustom local-config-files (list) "Local config files."
   :type '(repeat string))
-(dolist (file local-config-files)
-  (load file))
+(add-hook 'doom-first-buffer-hook (lambda ()
+                                    (dolist (file local-config-files)
+                                      (load file))))

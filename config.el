@@ -250,12 +250,15 @@
   :bind
   (:map lsp-mode-map
         ("C-c c f" . #'lsp-format-region)
-        ("C-c l p" . #'lsp-ui-peek-find-references)
         ("C-c l d" . #'lsp-ui-doc-show)
         ("C-c l i" . #'lsp-ui-peek-find-implementation)
         ("C-c l I" . #'lsp-find-implementation)
-        ("C-c l r" . #'lsp-find-references)
-        ("C-c l s" . #'lsp-ui-find-workspace-symbol)
+        ("C-c l r" . #'lsp-ui-peek-find-references)
+        ("C-c l R" . #'lsp-find-references)
+        ("C-c l s" . #'consult-lsp-file-symbols)
+        ("C-c l s" . #'consult-lsp-symbols)
+        ("C-c l p" . #'consult-flycheck)
+        ("C-c l P" . #'consult-lsp-diagnostics)
         ("M-RET" . #'lsp-execute-code-action)
         ("C-c C-n" . #'treesit-end-of-defun)
         ("C-c C-p" . #'treesit-beginning-of-defun))

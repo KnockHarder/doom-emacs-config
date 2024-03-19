@@ -3,7 +3,8 @@
 ;; key bindings and system settings
 (setq doom-theme 'doom-dracula
       doom-font (font-spec :size 14)
-      doom-variable-pitch-font (font-spec :size 16))
+      doom-variable-pitch-font (font-spec :size 16)
+      bookmark-save-flag 1)
 (setq! doom-modeline-buffer-file-name-style 'truncate-with-project)
 (setq gcmh-high-cons-threshold (* 1024 (* 1024 16)))
 (global-subword-mode 1)
@@ -90,7 +91,7 @@
 
 ;; version control
 (use-package! magit
-  :commands magit--handle-bookmark
+  :commands magit--handle-bookmark magit-get-current-branch
   :config
   (setq-default magit-diff-refine-hunk 'all)
   :bind
@@ -237,9 +238,17 @@
   (pipenv-mode . my/setup-pipenv))
 
 (add-to-list 'auto-mode-alist '("\\.java\\'" . java-ts-mode))
-(add-hook! java-ts-mode #'lsp)
 (setq! lsp-modeline-code-actions-enable nil)
 (setq-hook! 'java-ts-mode read-process-output-max (* 1024 (* 1024 3)))
+(defun set-up-java-lsp()
+  (when-let* ((branch (magit-get-current-branch))
+              (base-dir (file-name-parent-directory lsp-java-workspace-dir))
+              (workspace-dir (expand-file-name (concat branch "/") base-dir)))
+    (setq-local lsp-java-workspace-dir workspace-dir)
+    (setq-local lsp-java-workspace-cache-dir
+                (expand-file-name ".cache/" workspace-dir)))
+  (add-hook 'hack-local-variables-hook #'lsp 0 t))
+(add-hook! java-ts-mode #'set-up-java-lsp)
 (use-package! lsp-java
   :commands lsp
   :custom
@@ -248,6 +257,7 @@
   (lsp-java-save-actions-organize-imports t)
   (lsp-java-cleanup-actions-on-save t)
   (lsp-disabled-clients '(semgrep-ls))
+  (lsp-java-configuration-update-build-configuration "interactive")
   :bind
   (:map lsp-mode-map
         ("C-c c f" . #'lsp-format-region)
@@ -398,11 +408,11 @@
   (defun my/java-move-method-down (ARG)
     (interactive "P")
     (my/java-move-method (prefix-numeric-value ARG)))
-  (defun my/set-up-java-ts-mode ()
+  (defun set-up-lsp-java-before-save-hooks ()
     (add-hook 'before-save-hook (lambda ()
                                   (untabify (point-min) (point-max))) nil t)
     (add-hook 'before-save-hook #'my/lsp-java-format-changed-lines 0 t))
-  (add-hook 'java-ts-mode-hook #'my/set-up-java-ts-mode))
+  (add-hook 'java-ts-mode-hook #'set-up-lsp-java-before-save-hooks))
 
 ;; spell and translate
 (after! spell-fu

@@ -10,3 +10,5 @@
   :recipe (:host github :repo "lorniu/go-translate" :files("*.el")))
 (package! protobuf
   :recipe (:host github :repo "protocolbuffers/protobuf" :files("editors/*.el")))
+(package! string-inflection
+  :recipe (:host github :repo "akicho8/string-inflection" :files ("*.el")))

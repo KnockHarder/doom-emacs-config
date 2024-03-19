@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Create a reminder with osascript
+# uuid: 553BB7A9-2ACB-49A1-ACD4-13D78975DD06
+# key: remindermacos
+# condition: t
+# --
+osascript -e 'tell application "Reminders" to show (make new reminder with properties {name:"放量", due date:date "'"$(date -v+$1 "+%Y/%m/%d %H:%M:%S")"'"})'

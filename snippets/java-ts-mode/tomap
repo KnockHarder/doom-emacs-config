@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Collect stream to map
+# uuid: 85600E6B-493B-4B30-A8C8-2B33863ADE67
+# key: tomap
+# condition: t
+# --
+.collect(Collectors.toMap($1, $2, (a, b) -> a));$0

@@ -247,7 +247,7 @@
     (setq-local lsp-java-workspace-dir workspace-dir)
     (setq-local lsp-java-workspace-cache-dir
                 (expand-file-name ".cache/" workspace-dir)))
-  (add-hook 'hack-local-variables-hook #'lsp 0 t))
+  (add-hook 'find-file-hook #'lsp 0 t))
 (add-hook! java-ts-mode #'set-up-java-lsp)
 (use-package! lsp-java
   :commands lsp
@@ -442,7 +442,11 @@
   :bind
   (:map org-mode-map
         ("C-c l TAB" . #'org-fold-show-subtree)
-        ("C-c l <backtab>" . #'org-fold-hide-subtree)))
+        ("C-c l <backtab>" . #'org-fold-hide-subtree))
+  :config
+  (defun unset-org-last-indirect-buffer (&rest REST)
+    (setq org-last-indirect-buffer nil))
+  (advice-add #'org-tree-to-indirect-buffer :before #'unset-org-last-indirect-buffer))
 (use-package! org-tree-slide
   :commands org-tree-slide-mode
   :init

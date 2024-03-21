@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: String is blank or not
+# uuid: ED129EEB-EA4F-44BF-9271-D4FB97618538
+# key: strisblank
+# condition: t
+# --
+StringUtils.isBlank($0)

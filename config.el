@@ -20,30 +20,37 @@
   (aw-scope 'frame)
   :bind
   ("C-x 4 o" . ace-window))
-(defun my/open-side-window (buf &optional position)
-  (interactive "bSelect Buffer:")
-  (unless position
-    (let* ((pos-str (completing-read "Choose a position: "
-                                     '(left top right bottom)))
-           )
-      (setq position (cond
-                      ((string-equal pos-str "left") 'left)
-                      ((string-equal pos-str "top") 'top)
-                      ((string-equal pos-str "right") 'right)
-                      ((string-equal pos-str "bottom") 'bottom)))
-      ))
+(defun new-side-window-auto-slot (buffer side)
+  "Get max window slot on the side"
+  (let* ((major (window-with-parameter 'window-side side nil t))
+         windows next)
+    (cond
+     ((window-live-p major)
+      (setq windows (list major)))
+     ((window-valid-p major)
+      (setq next (window-child major) windows (list next))
+      (while (setq next (window-next-sibling next))
+        (add-to-list 'windows next))))
+    (if windows
+        (if-let ((founds (seq-filter (lambda (w)
+                                       (equal (window-buffer w) buffer))
+                                     windows)))
+            (window-parameter (car founds) 'window-slot)
+          (1+ (apply #'max (mapcar (lambda (w) (window-parameter w 'window-slot)) windows))))
+      0)))
+(defun my/open-side-window (buf position)
   (let* ((widown-width (if (memq position  (list 'left 'right)) 35 nil))
          (window-height (if (memq position (list 'top 'bottom)) 10 nil))
-         (win (display-buffer buf `(display-buffer-in-side-window
-                                    .
-                                    (
-                                     (side . ,position)
-                                     (window-width . ,widown-width)
-                                     (window-height . ,window-height)
-                                     (dedicated . t)
-                                     (no-other-window . t))))))
-    (set-window-parameter win 'no-other-window t)
-    win))
+         (slot (new-side-window-auto-slot buf position)))
+    (display-buffer buf `(display-buffer-in-side-window
+                          .
+                          (
+                           (side . ,position)
+                           (window-width . ,widown-width)
+                           (window-height . ,window-height)
+                           (slot . ,slot)
+                           (dedicated . t)
+                           (window-parameters . ((no-other-window . t))))))))
 (defun my/delete-other-not-side-windows ()
   (interactive)
   (let* ((main-window (window-main-window))
@@ -75,13 +82,14 @@
       (toggle-truncate-lines 0)
       (display-line-numbers-mode 1)
       (set-window-point window (point-max))))
-  (when-let ((name (bound-and-true-p flycheck-error-list-buffer))
-             (buffer (get-buffer name)))
-    (my/open-side-window buffer 'bottom))
   (when-let* ((buffer (get-buffer "*lsp-log*"))
               (window (my/open-side-window buffer 'top)))
     (with-current-buffer buffer
-      (set-window-point window (point-max)))))
+      (set-window-point window (point-max))))
+  (when-let ((buffer (get-buffer "*lsp session*")))
+    (my/open-side-window buffer 'left))
+  (when-let ((buffer (get-buffer "*Ibuffer*")))
+    (my/open-side-window buffer 'left)))
 (add-hook! 'doom-first-buffer-hook #'my/open-side-info-windows)
 
 ;; region
@@ -369,20 +377,20 @@
                 (end1 (treesit-node-end node))
                 (declaration-types '("method_declaration" "field_declaration" "class_declaration"))
                 (done (gensym "done")))
-      (let ((temp-node node))
-        (while-let ((prev-node (treesit-node-prev-sibling temp-node))
-                    (prev-type (treesit-node-type prev-node)))
+      (let ((prev-node node)
+            prev-type)
+        (while (and prev-node
+                    (setq prev-node (treesit-node-prev-sibling prev-node))
+                    (setq prev-type (treesit-node-type prev-node)))
           (if (member prev-type declaration-types)
-              (setq temp-node nil)
-            (setq start1 (treesit-node-start prev-node))
-            (setq temp-node prev-node))))
+              (setq prev-node nil)
+            (setq start1 (treesit-node-start prev-node)))))
       (let ((i 0)
-            (start2)
-            (end2))
+            start2 end2 prev-node prev-type next-node next-type)
         (cond
-         ((< NUM 0) (while-let ((_ (<= i (- NUM)))
-                                (prev-node (treesit-node-prev-sibling node))
-                                (prev-type (treesit-node-type prev-node)))
+         ((< NUM 0) (while (and (<= i (- NUM))
+                                (setq prev-node (treesit-node-prev-sibling node))
+                                (setq prev-type (treesit-node-type prev-node)))
                       (unless end2
                         (setq end2 (treesit-node-end prev-node)))
                       (if (not (member prev-type declaration-types))
@@ -391,9 +399,9 @@
                         (when (<= i (- NUM))
                           (setq start2 (treesit-node-start prev-node))))
                       (setq node prev-node)))
-         ((> NUM 0) (while-let ((_ (< i NUM))
-                                (next-node (treesit-node-next-sibling node))
-                                (next-type (treesit-node-type next-node)))
+         ((> NUM 0) (while (and (< i NUM)
+                                (setq next-node (treesit-node-next-sibling node))
+                                (setq next-type (treesit-node-type next-node)))
                       (unless start2
                         (setq start2 (treesit-node-start next-node)))
                       (when (member next-type declaration-types)
@@ -481,3 +489,15 @@
 (add-hook 'doom-first-buffer-hook (lambda ()
                                     (dolist (file local-config-files)
                                       (load file))))
+
+;; buffer and file
+(defun kill-buffer-and-delete-file ()
+  "Kill the current buffer and delete the file it is visiting."
+  (interactive)
+  (if-let ((filename (buffer-file-name)))
+      (when (y-or-n-p (format
+                       "Are you sure to delete current file? (y/n) : %s "
+                       filename))
+        (kill-current-buffer)
+        (delete-file filename))
+    (kill-current-buffer)))

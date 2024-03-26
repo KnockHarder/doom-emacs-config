@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Empty list
+# uuid: 54F30E75-D852-47F1-A03C-675DBB1845DA
+# key: emptylist
+# condition: t
+# --
+Collections.emptyList()$0

@@ -67,11 +67,13 @@
                             (not (window-parameter window 'window-side)))
                           (window-list)))))
 (global-set-key (kbd "C-x 1") #'my/delete-other-not-side-windows)
-(defun my/open-buffer-new-maximum-frame (buffer &optional position)
-  (interactive "bSelect Buffer:")
-  (with-selected-frame (make-frame)
-    (switch-to-buffer buffer)
-    (set-frame-parameter (selected-frame) 'fullscreen 'maximized)))
+(defun my/open-buffer-new-maximum-frame (&optional position)
+  (interactive)
+  (let ((consult--buffer-display (lambda (buffer &optional norecord)
+                                   (with-selected-frame (make-frame)
+                                     (switch-to-buffer buffer norecord)
+                                     (set-frame-parameter (selected-frame) 'fullscreen 'maximized)))))
+    (consult-buffer)))
 (bind-key "C-x 5 b" #'my/open-buffer-new-maximum-frame)
 (defun my/open-side-info-windows ()
   "Open info buffers at sides."
@@ -224,7 +226,62 @@
         (find-file  (expand-file-name file project-root))
         (run-hooks 'projectile-find-file-hook))))
   (define-key projectile-mode-map (kbd "C-c p f") 'projectile-find-file-with-symboal-at-point))
-
+(use-package! lsp
+  :config
+  (defun revert-lsp-session-buffer ()
+    (interactive)
+    (let ((inhibit-read-only t)
+          (session (lsp-session)))
+      (erase-buffer)
+      (--each (lsp-session-folders session)
+        (widget-create
+         `(tree-widget
+           :tag ,(propertize it 'face 'font-lock-keyword-face)
+           :open t
+           ,@(->> session
+                  (lsp-session-folder->servers)
+                  (gethash it)
+                  (-map 'lsp--render-workspace))))))
+    (goto-char (point-min)))
+  (bind-key "g" #'revert-lsp-session-buffer lsp-browser-mode-map)
+  (defun lsp-shutdown-workspace-and-clean-up ()
+    "Shutdown language server. Then kill buffers watched and remove workspace folders for lsp."
+    (interactive)
+    (--when-let (pcase (lsp-workspaces)
+                  (`nil (user-error "There are no active servers in the current buffer"))
+                  (`(,workspace) (when (y-or-n-p (format "Are you sure you want to stop the server %s?"
+                                                         (lsp--workspace-print workspace)))
+                                   workspace))
+                  (workspaces (lsp--completing-read "Select server: "
+                                                    workspaces
+                                                    'lsp--workspace-print nil t)))
+      (let ((buffers (lsp--workspace-buffers it))
+            (workspace-folders (lsp--workspace-workspace-folders it))
+            (active-folders (hash-table-keys (lsp-session-folder->servers (lsp-session)))))
+        (lsp-workspace-shutdown it)
+        (while (lsp-workspaces)
+          (sit-for 0.2))
+        (dolist (folder active-folders)
+          (when (not (member folder (hash-table-keys (lsp-session-folder->servers (lsp-session)))))
+            (lsp-workspace-folders-remove folder)
+            ))
+        (dolist (b buffers)
+          (when (buffer-modified-p)
+            (switch-to-buffer b))
+          (kill-buffer b)))))
+  (defun lsp-kill-workspace-buffers ()
+    "Kill all buffers watched by lsp."
+    (interactive)
+    (--when-let (pcase (lsp-workspaces)
+                  (`nil (user-error "There are no active servers in the current buffer"))
+                  (`(,workspace) workspace)
+                  (workspaces (lsp--completing-read "Select server: "
+                                                    workspaces
+                                                    'lsp--workspace-print nil t)))
+      (dolist (b (lsp--workspace-buffers it))
+        (when (buffer-modified-p)
+          (switch-to-buffer b))
+        (kill-buffer b)))))
 (use-package! python
   :commands python python-mode
   :bind
@@ -267,6 +324,7 @@
   (lsp-disabled-clients '(semgrep-ls))
   (lsp-java-type-hierarchy-lazy-load t)
   (lsp-java-code-generation-use-blocks t)
+  (lsp-java-compile-null-analysis-mode "automatic")
   :bind
   (:map lsp-mode-map
         ("C-c c f" . #'lsp-format-region)
@@ -276,7 +334,7 @@
         ("C-c l r" . #'lsp-ui-peek-find-references)
         ("C-c l R" . #'lsp-find-references)
         ("C-c l s" . #'consult-lsp-file-symbols)
-        ("C-c l S" . #'consult-lsp-symbols)
+        ("C-c l S" . #'lsp-ui-find-workspace-symbol)
         ("C-c l p" . #'consult-flycheck)
         ("C-c l P" . #'consult-lsp-diagnostics)
         ("M-RET" . #'lsp-execute-code-action)
@@ -338,44 +396,45 @@
     (interactive)
     (if (not buffer)
         (setq buffer (current-buffer)))
-    (let ((old-file (buffer-file-name buffer))
-          (new-file (diff-file-local-copy buffer))
-          (diff-line-regions (list)))
-      (unless old-file
-        (error "Buffer is not visiting a file"))
-      (with-temp-buffer
-        (shell-command (format "diff %s %s" old-file new-file) (current-buffer))
-        (goto-char (point-min))
-        (while (re-search-forward "^[0-9,]+[ac]\\([0-9,]+\\)$" nil t)
-          (push (match-string 1) diff-line-regions)))
-      (with-current-buffer buffer
-        (let ((current-point (point))
-              (current-line (progn (goto-char (point-min))
-                                   1)))
-          (dolist (line-region diff-line-regions)
-            (let* ((lines (split-string line-region ","))
-                   (start-line (string-to-number (car lines)))
-                   (end-line (if (> (length lines) 1)
-                                 (string-to-number (cadr lines))
-                               start-line))
-                   (start (progn
-                            (forward-line (- start-line current-line))
-                            (beginning-of-line)
-                            (point)))
-                   (end (progn
-                          (forward-line (- end-line start-line))
-                          (end-of-line)
-                          (point))))
-              (lsp-format-region start end)
-              (setq current-line end-line)))
-          (goto-char current-point)))))
+    (when (y-or-n-p "Format the changed regions with lsp?")
+      (let ((old-file (buffer-file-name buffer))
+            (new-file (diff-file-local-copy buffer))
+            (diff-line-regions (list)))
+        (unless old-file
+          (error "Buffer is not visiting a file"))
+        (with-temp-buffer
+          (shell-command (format "diff %s %s" old-file new-file) (current-buffer))
+          (goto-char (point-min))
+          (while (re-search-forward "^[0-9,]+[ac]\\([0-9,]+\\)$" nil t)
+            (push (match-string 1) diff-line-regions)))
+        (with-current-buffer buffer
+          (let ((current-point (point))
+                (current-line (progn (goto-char (point-min))
+                                     1)))
+            (dolist (line-region diff-line-regions)
+              (let* ((lines (split-string line-region ","))
+                     (start-line (string-to-number (car lines)))
+                     (end-line (if (> (length lines) 1)
+                                   (string-to-number (cadr lines))
+                                 start-line))
+                     (start (progn
+                              (forward-line (- start-line current-line))
+                              (beginning-of-line)
+                              (point)))
+                     (end (progn
+                            (forward-line (- end-line start-line))
+                            (end-of-line)
+                            (point))))
+                (lsp-format-region start end)
+                (setq current-line end-line)))
+            (goto-char current-point))))))
   (defun my/java-move-method (NUM)
     (when-let* ((current-point (point))
                 (point-node (treesit-node-at current-point))
                 (node (my/treesit-parent-util-type point-node "method_declaration"))
                 (start1 (treesit-node-start node))
                 (end1 (treesit-node-end node))
-                (declaration-types '("method_declaration" "field_declaration" "class_declaration"))
+                (declaration-types '("method_declaration" "field_declaration" "class_declaration" "constructor_declaration"))
                 (done (gensym "done")))
       (let ((prev-node node)
             prev-type)
@@ -491,13 +550,14 @@
                                       (load file))))
 
 ;; buffer and file
-(defun kill-buffer-and-delete-file ()
+(defun delete-file-and-kill-buffer ()
   "Kill the current buffer and delete the file it is visiting."
   (interactive)
-  (if-let ((filename (buffer-file-name)))
+  (if-let ((filename (buffer-file-name))
+           (buffer (current-buffer)))
       (when (y-or-n-p (format
                        "Are you sure to delete current file? (y/n) : %s "
                        filename))
-        (kill-current-buffer)
-        (delete-file filename))
+        (delete-file filename)
+        (kill-current-buffer))
     (kill-current-buffer)))

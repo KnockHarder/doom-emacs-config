@@ -4,4 +4,4 @@
 # key: tolist
 # condition: t
 # --
-collect(Collectors.toList());$0
+collect(Collectors.toList())$0

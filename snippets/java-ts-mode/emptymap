@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Empty map
+# uuid: D752DA88-19F1-4125-86C6-3C3CFF516F61
+# key: emptymap
+# condition: t
+# --
+Collections.emptyMap()$0

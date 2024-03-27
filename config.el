@@ -226,8 +226,26 @@
         (find-file  (expand-file-name file project-root))
         (run-hooks 'projectile-find-file-hook))))
   (define-key projectile-mode-map (kbd "C-c p f") 'projectile-find-file-with-symboal-at-point))
+(defcustom lsp-vc-branch-worksapce-roots-file nil
+  "File to save the workspace roots for project branches."
+  :type 'string)
+(defvar lsp-vc-branch-worksapce-roots-map (make-hash-table :test 'equal))
 (use-package! lsp
+  :custom
+  (lsp-modeline-code-actions-enable nil)
   :config
+  (defun lsp-vc-branch-worksapce-roots-file-save ()
+    (if (and lsp-vc-branch-worksapce-roots-file
+             (file-writable-p lsp-vc-branch-worksapce-roots-file))
+        (with-temp-file lsp-vc-branch-worksapce-roots-file
+          (insert (prin1-to-string lsp-vc-branch-worksapce-roots-map)))
+      (message "Cannot save workspace roots to file: %s" lsp-vc-branch-worksapce-roots-file)))
+  (defun lsp-vc-branch-worksapce-roots-file-load ()
+    (when (and (not (null lsp-vc-branch-worksapce-roots-file))
+               (file-readable-p lsp-vc-branch-worksapce-roots-file))
+      (with-temp-buffer
+        (insert-file-contents lsp-vc-branch-worksapce-roots-file)
+        (setq lsp-vc-branch-worksapce-roots-map (read (current-buffer))))))
   (defun revert-lsp-session-buffer ()
     (interactive)
     (let ((inhibit-read-only t)
@@ -257,11 +275,16 @@
                                                     'lsp--workspace-print nil t)))
       (let ((buffers (lsp--workspace-buffers it))
             (workspace-folders (lsp--workspace-workspace-folders it))
-            (active-folders (hash-table-keys (lsp-session-folder->servers (lsp-session)))))
+            (activate-folders (hash-table-keys (lsp-session-folder->servers (lsp-session)))))
+        (dolist (b buffers)
+          (with-current-buffer b
+            (when-let ((brach (magit-get-current-branch)))
+              (puthash brach activate-folders lsp-vc-branch-worksapce-roots-map))))
+        (lsp-vc-branch-worksapce-roots-file-save)
         (lsp-workspace-shutdown it)
         (while (lsp-workspaces)
           (sit-for 0.2))
-        (dolist (folder active-folders)
+        (dolist (folder activate-folders)
           (when (not (member folder (hash-table-keys (lsp-session-folder->servers (lsp-session)))))
             (lsp-workspace-folders-remove folder)
             ))
@@ -282,6 +305,14 @@
         (when (buffer-modified-p)
           (switch-to-buffer b))
         (kill-buffer b)))))
+(use-package! lsp-ui
+  :commands lsp-ui-mode
+  :custom
+  (lsp-ui-doc-show-with-cursor t)
+  (lsp-ui-doc-include-signature t)
+  :config
+  (setq lsp-ui-doc-position 'bottom
+        lsp-ui-doc-max-width 100))
 (use-package! python
   :commands python python-mode
   :bind
@@ -303,15 +334,23 @@
   (pipenv-mode . my/setup-pipenv))
 
 (add-to-list 'auto-mode-alist '("\\.java\\'" . java-ts-mode))
-(setq! lsp-modeline-code-actions-enable nil)
 (setq-hook! 'java-ts-mode read-process-output-max (* 1024 (* 1024 3)))
 (defun set-up-java-lsp()
+  (when (or (null lsp-vc-branch-worksapce-roots-file)
+            (not (file-readable-p lsp-vc-branch-worksapce-roots-file)))
+    (setq lsp-vc-branch-worksapce-roots-file
+          (expand-file-name "branch-workspace-roots.el" (file-name-parent-directory lsp-java-workspace-dir)))
+    (lsp-vc-branch-worksapce-roots-file-load))
   (when-let* ((branch (magit-get-current-branch))
               (base-dir (file-name-parent-directory lsp-java-workspace-dir))
               (workspace-dir (expand-file-name (concat branch "/") base-dir)))
     (setq-local lsp-java-workspace-dir workspace-dir)
     (setq-local lsp-java-workspace-cache-dir
-                (expand-file-name ".cache/" workspace-dir)))
+                (expand-file-name ".cache/" workspace-dir))
+    (unless (->> (lsp-session-server-id->folders (lsp-session)) (gethash 'jdtls))
+      (when-let ((roots (gethash branch lsp-vc-branch-worksapce-roots-map)))
+        (dolist (it roots) (lsp-workspace-folders-add it))
+        (puthash 'jdtls roots (lsp-session-server-id->folders (lsp-session))))))
   (add-hook 'find-file-hook #'lsp 0 t))
 (add-hook! java-ts-mode #'set-up-java-lsp)
 (use-package! lsp-java
@@ -341,12 +380,13 @@
         ("C-c C-n" . #'treesit-end-of-defun)
         ("C-c C-p" . #'treesit-beginning-of-defun))
   :config
-  (setq! lsp-ui-doc-enable nil)
   (define-key general-override-mode-map (kbd "C-c c f") nil)
   (defun my/lsp-java-hover-value ()
     (when-let* ((params (lsp--text-document-position-params))
                 (response (lsp-request "textDocument/hover" params))
                 (contents (gethash "contents" response)))
+      (when (vectorp contents)
+        (setq contents (aref contents 0)))
       (gethash "value" contents)))
   (defun my/lsp-java-copy-hover-value ()
     (interactive)
@@ -364,21 +404,27 @@
         (progn (kill-new reference)
                (message "Copied method reference: %s" reference))
       (message "Cannot find any method at point")))
-  (defun my/lsp-java-show-definition-maven-coorinate ()
+  (defun my/lsp-java-show-definition-location ()
     "Get defin Maven coordinate from input-string."
     (interactive)
     (if-let* ((response (car (lsp-request "textDocument/definition" (lsp--text-document-position-params))))
-              (uri (gethash "uri" response))
-              (mvn-group-id (and (string-match "=\\/maven.groupId=\\(/[^=]+\\)=" uri)
-                                 (match-string 1 uri)))
-              (mvn-artifact-id (and (string-match "=\\/maven.artifactId=\\(/[^=]+\\)=" uri)
-                                    (match-string 1 uri)))
-              (mvn-version (and (string-match "=\\/maven.version=\\(/[^=]+\\)=" uri)
-                                (match-string 1 uri))))
-        (message (concat (substring mvn-group-id 1) ":"
-                         (substring mvn-artifact-id 1) ":"
-                         (substring mvn-version 1)))
-      (message "Error: Cannot parse Maven Coordinate")))
+              (uri (gethash "uri" response)))
+        (let ((location (cond
+                         ((string-prefix-p "jdt://" uri)
+                          (if-let* ((mvn-group-id (and (string-match "=\\/maven.groupId=\\(/[^=]+\\)=" uri)
+                                                       (match-string 1 uri)))
+                                    (mvn-artifact-id (and (string-match "=\\/maven.artifactId=\\(/[^=]+\\)=" uri)
+                                                          (match-string 1 uri)))
+                                    (mvn-version (and (string-match "=\\/maven.version=\\(/[^=]+\\)=" uri)
+                                                      (match-string 1 uri))))
+                              (concat (substring mvn-group-id 1) ":"
+                                      (substring mvn-artifact-id 1) ":"
+                                      (substring mvn-version 1))
+                            "Internal Library"))
+                         ((string-prefix-p "file://" uri)
+                          (string-remove-prefix "file://" uri))
+                         (t (format "Unknown URI: %s" uri)))))
+          (message "Definition location: %s" location))))
   (defun my/treesit-parent-util-type (NODE TYPE)
     (treesit-parent-until NODE (lambda (node)
                                  (string-equal (treesit-node-type node) TYPE))))

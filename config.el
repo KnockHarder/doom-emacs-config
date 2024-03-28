@@ -30,11 +30,14 @@
 ;; version control
 (use-package! magit
   :commands magit--handle-bookmark magit-get-current-branch
-  :config
-  (setq-default magit-diff-refine-hunk 'all)
   :bind
   (:map magit-mode-map
-        ("C-c o l" . #'browse-url)))
+        ("C-c o l" . #'browse-url))
+  :hook
+  (magit-status-mode . magit-save-repository-buffers)
+  (magit-diff-mode . magit-save-repository-buffers)
+  :config
+  (setq-default magit-diff-refine-hunk 'all))
 
 ;; rime
 (use-package! rime
@@ -309,6 +312,7 @@
         ("C-c l S" . #'lsp-ui-find-workspace-symbol)
         ("C-c l p" . #'consult-flycheck)
         ("C-c l P" . #'consult-lsp-diagnostics)
+        ("C-c l c" . #'lsp-treemacs-call-hierarchy)
         ("M-RET" . #'lsp-execute-code-action))
   :config
   (define-key general-override-mode-map (kbd "C-c c f") nil)
@@ -457,7 +461,6 @@
                                   (untabify (point-min) (point-max))) nil t)
     (add-hook 'before-save-hook #'my/lsp-java-format-changed-lines 0 t))
   (add-hook 'java-ts-mode-hook #'set-up-lsp-java-before-save-hooks))
-
 ;; spell and translate
 (after! spell-fu
   (when-let ((dict (spell-fu-get-ispell-dictionary "english")))

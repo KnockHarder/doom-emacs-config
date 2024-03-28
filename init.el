@@ -30,6 +30,5 @@
        doom-dashboard
        workspaces
        modeline
-       (window-select +switch-window)
        side-window
        )

@@ -8,65 +8,10 @@
 (setq! doom-modeline-buffer-file-name-style 'truncate-with-project)
 (setq gcmh-high-cons-threshold (* 1024 (* 1024 16)))
 (global-subword-mode 1)
-(add-to-list 'default-frame-alist '(width . 120))
-(add-to-list 'default-frame-alist '(height . 40))
 (add-hook 'doom-init-ui-hook #'toggle-frame-maximized)
 (global-set-key (kbd "s-k") 'kill-current-buffer)
 
 ;; window and frame
-(use-package! ace-window
-  :commands ace-window
-  :custom
-  (aw-scope 'frame)
-  :bind
-  ("C-x 4 o" . ace-window))
-(defun new-side-window-auto-slot (buffer side)
-  "Get max window slot on the side"
-  (let* ((major (window-with-parameter 'window-side side nil t))
-         windows next)
-    (cond
-     ((window-live-p major)
-      (setq windows (list major)))
-     ((window-valid-p major)
-      (setq next (window-child major) windows (list next))
-      (while (setq next (window-next-sibling next))
-        (add-to-list 'windows next))))
-    (if windows
-        (if-let ((founds (seq-filter (lambda (w)
-                                       (equal (window-buffer w) buffer))
-                                     windows)))
-            (window-parameter (car founds) 'window-slot)
-          (1+ (apply #'max (mapcar (lambda (w) (window-parameter w 'window-slot)) windows))))
-      0)))
-(defun my/open-side-window (buf position)
-  (let* ((widown-width (if (memq position  (list 'left 'right)) 35 nil))
-         (window-height (if (memq position (list 'top 'bottom)) 10 nil))
-         (slot (new-side-window-auto-slot buf position)))
-    (display-buffer buf `(display-buffer-in-side-window
-                          .
-                          (
-                           (side . ,position)
-                           (window-width . ,widown-width)
-                           (window-height . ,window-height)
-                           (slot . ,slot)
-                           (dedicated . t)
-                           (window-parameters . ((no-other-window . t))))))))
-(defun my/delete-other-not-side-windows ()
-  (interactive)
-  (let* ((main-window (window-main-window))
-         (main-window-buffer (window-buffer main-window))
-         (window (selected-window))
-         (buffer (current-buffer)))
-    (when (and main-window-buffer
-               (not (eq main-window window)))
-      (set-window-buffer main-window buffer)
-      (select-window (window-main-window))))
-  (mapc #'delete-window
-        (delq (selected-window)
-              (seq-filter (lambda (window)
-                            (not (window-parameter window 'window-side)))
-                          (window-list)))))
-(global-set-key (kbd "C-x 1") #'my/delete-other-not-side-windows)
 (defun my/open-buffer-new-maximum-frame (&optional position)
   (interactive)
   (let ((consult--buffer-display (lambda (buffer &optional norecord)
@@ -75,24 +20,7 @@
                                      (set-frame-parameter (selected-frame) 'fullscreen 'maximized)))))
     (consult-buffer)))
 (bind-key "C-x 5 b" #'my/open-buffer-new-maximum-frame)
-(defun my/open-side-info-windows ()
-  "Open info buffers at sides."
-  (interactive)
-  (when-let ((buffer (messages-buffer))
-             (window (my/open-side-window buffer 'left)))
-    (with-current-buffer buffer
-      (toggle-truncate-lines 0)
-      (display-line-numbers-mode 1)
-      (set-window-point window (point-max))))
-  (when-let* ((buffer (get-buffer "*lsp-log*"))
-              (window (my/open-side-window buffer 'top)))
-    (with-current-buffer buffer
-      (set-window-point window (point-max))))
-  (when-let ((buffer (get-buffer "*lsp session*")))
-    (my/open-side-window buffer 'left))
-  (when-let ((buffer (get-buffer "*Ibuffer*")))
-    (my/open-side-window buffer 'left)))
-(add-hook! 'doom-first-buffer-hook #'my/open-side-info-windows)
+
 
 ;; region
 (use-package! expand-region
@@ -353,6 +281,11 @@
         (puthash 'jdtls roots (lsp-session-server-id->folders (lsp-session))))))
   (add-hook 'find-file-hook #'lsp 0 t))
 (add-hook! java-ts-mode #'set-up-java-lsp)
+(use-package java-ts-mode
+  :bind
+  (:map java-ts-mode-map
+        ("C-c C-p" . #'treesit-beginning-of-defun)
+        ("C-c C-n" . #'treesit-end-of-defun)))
 (use-package! lsp-java
   :commands lsp
   :custom
@@ -376,9 +309,7 @@
         ("C-c l S" . #'lsp-ui-find-workspace-symbol)
         ("C-c l p" . #'consult-flycheck)
         ("C-c l P" . #'consult-lsp-diagnostics)
-        ("M-RET" . #'lsp-execute-code-action)
-        ("C-c C-n" . #'treesit-end-of-defun)
-        ("C-c C-p" . #'treesit-beginning-of-defun))
+        ("M-RET" . #'lsp-execute-code-action))
   :config
   (define-key general-override-mode-map (kbd "C-c c f") nil)
   (defun my/lsp-java-hover-value ()
@@ -474,13 +405,13 @@
                 (lsp-format-region start end)
                 (setq current-line end-line)))
             (goto-char current-point))))))
-  (defun my/java-move-method (NUM)
+  (defun treesit-move-declaration (NUM)
     (when-let* ((current-point (point))
                 (point-node (treesit-node-at current-point))
+                (declaration-types '("method_declaration" "field_declaration" "class_declaration" "constructor_declaration"))
                 (node (my/treesit-parent-util-type point-node "method_declaration"))
                 (start1 (treesit-node-start node))
                 (end1 (treesit-node-end node))
-                (declaration-types '("method_declaration" "field_declaration" "class_declaration" "constructor_declaration"))
                 (done (gensym "done")))
       (let ((prev-node node)
             prev-type)
@@ -515,12 +446,12 @@
                       (setq node next-node))))
         (when (and start2 end2)
           (transpose-regions start1 end1 start2 end2)))))
-  (defun my/java-move-method-up (ARG)
+  (defun treesit-move-declaration-up (ARG)
     (interactive "P")
-    (my/java-move-method (- (prefix-numeric-value ARG))))
-  (defun my/java-move-method-down (ARG)
+    (treesit-move-declaration (- (prefix-numeric-value ARG))))
+  (defun treesit-move-declaration-down (ARG)
     (interactive "P")
-    (my/java-move-method (prefix-numeric-value ARG)))
+    (treesit-move-declaration (prefix-numeric-value ARG)))
   (defun set-up-lsp-java-before-save-hooks ()
     (add-hook 'before-save-hook (lambda ()
                                   (untabify (point-min) (point-max))) nil t)

@@ -30,5 +30,6 @@
        doom-dashboard
        workspaces
        modeline
-       (treemacs +lsp)
+       (window-select +switch-window)
+       side-window
        )

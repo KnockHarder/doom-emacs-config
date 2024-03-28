@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Create a slf4j logger
+# uuid: 49FAD5BC-45C0-4815-9FF2-3DDF4685F000
+# key: logger
+# condition: t
+# --
+LoggerFactory.getLogger(${1:`(f-base buffer-file-name)`}.class)$0

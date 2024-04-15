@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Empty string.
+# uuid: 0680C59A-40D0-40D8-B11F-61F9F80337DA
+# key: strempty
+# condition: t
+# --
+StringUtils.EMPTY$0

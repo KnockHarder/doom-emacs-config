@@ -20,6 +20,7 @@
        (java +lsp)
        kotlin
        (org +present)
+       (treesit-f)
        :tools
        (magit)
        (lsp)

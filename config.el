@@ -123,40 +123,6 @@
 (setq project-find-functions '(project-try-vc project-projectile))
 (after! vc-git
   (add-to-list 'projectile-project-root-functions #'vc-git-root))
-(after! projectile
-  (defun file-like-symbol-at-point ()
-    (when (eq major-mode 'java-ts-mode)
-      (when-let* ((node (treesit-node-at (point)))
-                  (node-name (or (treesit-node-field-name node) ""))
-                  (parent-type (treesit-node-type (treesit-node-parent node))))
-        (cond
-         ((member parent-type '("generic_type"
-                                "type_arguments"
-                                "method_reference"
-                                "scoped_identifier"))
-          (treesit-node-text node t))
-         ((string= "type" node-name)
-          (treesit-node-text node t))
-         ((and (string-equal parent-type "method_invocation")
-               (string-equal node-name "object"))
-          (downcase (treesit-node-text node t)))
-         (t
-          nil)))))
-  (defun projectile-find-file-with-symboal-at-point (&optional invalidate-cache)
-    (interactive "P")
-    (projectile-maybe-invalidate-cache invalidate-cache)
-    (let* ((project-root (projectile-acquire-root))
-           (symbol (thing-at-point 'symbol))
-           (default (file-like-symbol-at-point)))
-      (when-let* ((prompt (if default
-                              (format "Find file (default %s): " default)
-                            "Find file: "))
-                  (file (projectile-completing-read prompt
-                                                    (projectile-project-files project-root)
-                                                    :initial-input default)))
-        (find-file  (expand-file-name file project-root))
-        (run-hooks 'projectile-find-file-hook))))
-  (define-key projectile-mode-map (kbd "C-c p f") 'projectile-find-file-with-symboal-at-point))
 (defcustom lsp-vc-branch-worksapce-roots-file nil
   "File to save the workspace roots for project branches."
   :type 'string)
@@ -272,23 +238,23 @@
     (setq lsp-vc-branch-worksapce-roots-file
           (expand-file-name "branch-workspace-roots.el" (file-name-parent-directory lsp-java-workspace-dir)))
     (lsp-vc-branch-worksapce-roots-file-load))
-  (when-let* ((branch (magit-get-current-branch))
-              (base-dir (file-name-parent-directory lsp-java-workspace-dir))
-              (workspace-dir (expand-file-name (concat branch "/") base-dir)))
-    (setq-local lsp-java-workspace-dir workspace-dir)
-    (setq-local lsp-java-workspace-cache-dir
-                (expand-file-name ".cache/" workspace-dir))
-    (unless (->> (lsp-session-server-id->folders (lsp-session)) (gethash 'jdtls))
-      (when-let ((roots (gethash branch lsp-vc-branch-worksapce-roots-map)))
-        (dolist (it roots) (lsp-workspace-folders-add it))
-        (puthash 'jdtls roots (lsp-session-server-id->folders (lsp-session))))))
+  (if (string-suffix-p ".cache/" (file-name-parent-directory (buffer-file-name)))
+      (let* ((cache-dir (file-name-parent-directory (buffer-file-name)))
+             (workspace-dir (file-name-parent-directory cache-dir)))
+        (setq-local lsp-java-workspace-dir workspace-dir
+                    lsp-java-workspace-cache-dir cache-dir))
+    (when-let* ((branch (magit-get-current-branch))
+                (base-dir (file-name-parent-directory lsp-java-workspace-dir))
+                (workspace-dir (expand-file-name (concat branch "/") base-dir)))
+      (setq-local lsp-java-workspace-dir workspace-dir)
+      (setq-local lsp-java-workspace-cache-dir
+                  (expand-file-name ".cache/" workspace-dir))
+      (unless (->> (lsp-session-server-id->folders (lsp-session)) (gethash 'jdtls))
+        (when-let ((roots (gethash branch lsp-vc-branch-worksapce-roots-map)))
+          (dolist (it roots) (lsp-workspace-folders-add it))
+          (puthash 'jdtls roots (lsp-session-server-id->folders (lsp-session)))))))
   (add-hook 'find-file-hook #'lsp 0 t))
 (add-hook! java-ts-mode #'set-up-java-lsp)
-(use-package java-ts-mode
-  :bind
-  (:map java-ts-mode-map
-        ("C-c C-p" . #'treesit-beginning-of-defun)
-        ("C-c C-n" . #'treesit-end-of-defun)))
 (use-package! lsp-java
   :commands lsp
   :custom
@@ -360,18 +326,6 @@
                           (string-remove-prefix "file://" uri))
                          (t (format "Unknown URI: %s" uri)))))
           (message "Definition location: %s" location))))
-  (defun my/treesit-parent-util-type (NODE TYPE)
-    (treesit-parent-until NODE (lambda (node)
-                                 (string-equal (treesit-node-type node) TYPE))))
-  (defun my/java-copy-outter-class-name-at-point ()
-    (interactive)
-    (if-let* ((node (treesit-node-at (point)))
-              (node (my/treesit-parent-util-type node "class_declaration"))
-              (class-name-node (treesit-node-child-by-field-name node "name"))
-              (content (treesit-node-text class-name-node t)))
-        (progn (kill-new content)
-               (message "Copied class name: %s" content))
-      (message "Cannot find and class name from point" content)))
   (defun my/lsp-java-format-changed-lines (&optional buffer)
     "Lsp-format changed lines in the buffer."
     (interactive)
@@ -409,53 +363,6 @@
                 (lsp-format-region start end)
                 (setq current-line end-line)))
             (goto-char current-point))))))
-  (defun treesit-move-declaration (NUM)
-    (when-let* ((current-point (point))
-                (point-node (treesit-node-at current-point))
-                (declaration-types '("method_declaration" "field_declaration" "class_declaration" "constructor_declaration"))
-                (node (my/treesit-parent-util-type point-node "method_declaration"))
-                (start1 (treesit-node-start node))
-                (end1 (treesit-node-end node))
-                (done (gensym "done")))
-      (let ((prev-node node)
-            prev-type)
-        (while (and prev-node
-                    (setq prev-node (treesit-node-prev-sibling prev-node))
-                    (setq prev-type (treesit-node-type prev-node)))
-          (if (member prev-type declaration-types)
-              (setq prev-node nil)
-            (setq start1 (treesit-node-start prev-node)))))
-      (let ((i 0)
-            start2 end2 prev-node prev-type next-node next-type)
-        (cond
-         ((< NUM 0) (while (and (<= i (- NUM))
-                                (setq prev-node (treesit-node-prev-sibling node))
-                                (setq prev-type (treesit-node-type prev-node)))
-                      (unless end2
-                        (setq end2 (treesit-node-end prev-node)))
-                      (if (not (member prev-type declaration-types))
-                          (setq start2 (treesit-node-start prev-node))
-                        (setq i (1+ i))
-                        (when (<= i (- NUM))
-                          (setq start2 (treesit-node-start prev-node))))
-                      (setq node prev-node)))
-         ((> NUM 0) (while (and (< i NUM)
-                                (setq next-node (treesit-node-next-sibling node))
-                                (setq next-type (treesit-node-type next-node)))
-                      (unless start2
-                        (setq start2 (treesit-node-start next-node)))
-                      (when (member next-type declaration-types)
-                        (setq end2 (treesit-node-end next-node))
-                        (setq i (1+ i)))
-                      (setq node next-node))))
-        (when (and start2 end2)
-          (transpose-regions start1 end1 start2 end2)))))
-  (defun treesit-move-declaration-up (ARG)
-    (interactive "P")
-    (treesit-move-declaration (- (prefix-numeric-value ARG))))
-  (defun treesit-move-declaration-down (ARG)
-    (interactive "P")
-    (treesit-move-declaration (prefix-numeric-value ARG)))
   (defun set-up-lsp-java-before-save-hooks ()
     (add-hook 'before-save-hook (lambda ()
                                   (untabify (point-min) (point-max))) nil t)

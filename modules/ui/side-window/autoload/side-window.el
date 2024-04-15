@@ -28,10 +28,8 @@
       (display-line-numbers-mode 1)
       (set-window-point window (point-max))))
   (when-let* ((buffer (get-buffer "*lsp-log*"))
-              (window (side-window-open-by-buffer buffer 'top)))
+              (window (side-window-open-by-buffer buffer 'left)))
     (with-current-buffer buffer
       (set-window-point window (point-max))))
   (when-let ((buffer (get-buffer "*lsp session*")))
-    (side-window-open-by-buffer buffer 'left))
-  (when-let ((buffer (get-buffer "*Ibuffer*")))
     (side-window-open-by-buffer buffer 'left)))

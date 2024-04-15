@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Map is empty or not
+# uuid: 3FA631AC-8F8E-46A9-8829-AF8C789D2375
+# key: mapisempty
+# condition: t
+# --
+MapUtils.isEmpty($0)

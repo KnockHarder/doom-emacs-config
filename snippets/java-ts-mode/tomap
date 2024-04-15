@@ -4,4 +4,4 @@
 # key: tomap
 # condition: t
 # --
-.collect(Collectors.toMap($1, $2, (a, b) -> a));$0
+collect(Collectors.toMap(${1:null}, ${2:null}, (a, b) -> a));$0

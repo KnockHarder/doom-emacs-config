@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Create a array list by elements
+# uuid: DDF9C237-4B30-4313-A0BE-BCB13F1AFBBC
+# key: aslist
+# condition: t
+# --
+Arrays.asList($0)

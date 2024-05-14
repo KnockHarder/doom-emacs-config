@@ -12,6 +12,12 @@
               (class-name-node (treesit-node-child-by-field-name node "name")))
     (treesit-node-text class-name-node t)))
 
+(defconst declaration-types '("method_declaration"
+                              "field_declaration"
+                              "class_declaration"
+                              "interface_declaration"
+                              "constructor_declaration"))
+
 (defun treesit-declaration-node-start (NODE)
   (let ((start (treesit-node-start NODE))
         (prev-node NODE))
@@ -25,16 +31,11 @@
 
 (defun treesit-move-declaration (NUM)
   "Move the declaration where the point is in, up or down by NUM."
-  (when-let* ((declaration-types '("method_declaration"
-                                   "field_declaration"
-                                   "class_declaration"
-                                   "constructor_declaration"))
-              (current-point (point))
+  (when-let* ((current-point (point))
               (point-node (treesit-node-at current-point))
               (node (treesit-parent-util-type point-node "method_declaration"))
               (start1 (treesit-declaration-node-start node))
-              (end1 (treesit-node-end node))
-              (done (gensym "done")))
+              (end1 (treesit-node-end node)))
     (let ((i 0)
           start2 end2 prev-node prev-type next-node next-type)
       (cond
@@ -59,7 +60,31 @@
                       (setq i (1+ i)))
                     (setq node next-node))))
       (when (and start2 end2)
+        (message "start1: %s, end1: %s, start2: %s, end2: %s" start1 end1 start2 end2)
         (transpose-regions start1 end1 start2 end2)))))
+
+(defun er/mark-treesit-parent-node ()
+  (let (start end)
+    (if (region-active-p)
+        (when-let* ((region-b (region-beginning))
+                    (region-e (region-end))
+                    (node (treesit-node-on region-b region-e))
+                    (node-b (treesit-node-start node))
+                    (node-e (treesit-node-end node)))
+          (if (and (equal region-b node-b)
+                   (equal region-e node-e))
+              (when-let ((parent (treesit-node-parent node)))
+                (setq start (treesit-node-start parent)
+                      end (treesit-node-end parent)))
+            (setq start node-b
+                  end node-e)))
+      (when-let* ((node (treesit-node-at (point))))
+        (setq start (treesit-node-start node)
+              end (treesit-node-end node))))
+    (when (and start end)
+      (goto-char end)
+      (set-mark (point))
+      (goto-char start))))
 
 (use-package java-ts-mode
   :bind

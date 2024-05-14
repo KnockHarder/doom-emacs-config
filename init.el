@@ -21,6 +21,7 @@
        kotlin
        (org +present)
        (treesit-f)
+       (lsp-jdt)
        :tools
        (magit)
        (lsp)

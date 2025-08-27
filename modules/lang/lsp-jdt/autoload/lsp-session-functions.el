@@ -16,4 +16,3 @@
                 (gethash it)
                 (-map 'lsp--render-workspace))))))
   (goto-char (point-min)))
-(bind-key "g" #'revert-lsp-session-buffer lsp-browser-mode-map)

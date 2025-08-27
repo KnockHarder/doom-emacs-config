@@ -1,14 +1,18 @@
 ;;; lang/treesit-f/config.el
 
-(defun treesit-parent-util-type (NODE TYPE)
-  "Return the closest parent of NODE by TYPE."
+(defun treesit-parent-until-any-type (NODE TYPES)
+  "Return the closest parent of NODE which match any type in TYPES."
   (treesit-parent-until NODE (lambda (node)
-                               (string-equal (treesit-node-type node) TYPE))))
+                               (member (treesit-node-type node) TYPES))))
+
+(defun treesit-parent-until-type (NODE TYPE)
+  "Return the closest parent of NODE by TYPE."
+  (treesit-parent-until-any-type NODE (list TYPE)))
 
 (defun find-outter-class-name-at-point ()
   "Return the class name of the class that the point is in."
   (when-let* ((node (treesit-node-at (point)))
-              (node (treesit-parent-util-type node "class_declaration"))
+              (node (treesit-parent-until-type node "class_declaration"))
               (class-name-node (treesit-node-child-by-field-name node "name")))
     (treesit-node-text class-name-node t)))
 
@@ -33,7 +37,7 @@
   "Move the declaration where the point is in, up or down by NUM."
   (when-let* ((current-point (point))
               (point-node (treesit-node-at current-point))
-              (node (treesit-parent-util-type point-node "method_declaration"))
+              (node (treesit-parent-until-any-type point-node declaration-types))
               (start1 (treesit-declaration-node-start node))
               (end1 (treesit-node-end node)))
     (let ((i 0)

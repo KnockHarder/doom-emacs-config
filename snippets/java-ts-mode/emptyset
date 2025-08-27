@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Empty set.
+# uuid: 4B8E6D85-6712-4CC6-8EE0-277D5A84A015
+# key: emptyset
+# condition: t
+# --
+Collections.emptySet()$0

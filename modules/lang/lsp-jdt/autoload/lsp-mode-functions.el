@@ -42,7 +42,8 @@
                        ((string-prefix-p "file://" uri)
                         (string-remove-prefix "file://" uri))
                        (t (format "Unknown URI: %s" uri)))))
-        (message "Definition location: %s" location))))
+        (message "Definition location: %s" location)
+        location)))
 
 ;;;###autoload
 (defun lsp-format-changed-lines (&optional buffer)

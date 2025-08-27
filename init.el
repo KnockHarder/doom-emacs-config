@@ -5,7 +5,7 @@
        (company +childframe)
        (vertico +icons +childframe)
        :config
-       (default +bindings +smartparens)
+       (default +bindings)
        :editor
        (format +onsave)
        snippets

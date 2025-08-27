@@ -119,6 +119,7 @@
         ("C-c TAB p" . #'copilot-previous-completion)))
 
 ;; code
+(add-hook! prog-mode #'smartparens-mode)
 (bind-key "C-:" #'company-other-backend)
 (setq project-find-functions '(project-try-vc project-projectile))
 (after! vc-git

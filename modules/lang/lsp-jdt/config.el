@@ -41,7 +41,9 @@
       (setq-local lsp-java-workspace-cache-dir
                   (expand-file-name ".cache/" workspace-dir))
       (unless (->> (lsp-session-server-id->folders (lsp-session)) (gethash 'jdtls))
-        (when-let ((roots (gethash branch lsp-vc-branch-worksapce-roots-map)))
+        (when-let* ((roots (gethash branch lsp-vc-branch-worksapce-roots-map))
+                    (project-root-path (expand-file-name (substring (lsp--suggest-project-root) 0 -1)))
+                    (is-in-dirs (member project-root-path roots)))
           (dolist (it roots) (lsp-workspace-folders-add it))
           (puthash 'jdtls roots (lsp-session-server-id->folders (lsp-session)))))))
   (setq-local er/try-expand-list '(er/mark-treesit-parent-node))
@@ -80,6 +82,10 @@
   (define-key general-override-mode-map (kbd "C-c c f") nil)
   :hook
   (java-ts-mode . set-up-java-lsp))
+
+(use-package! lsp
+  :config
+  (bind-key "g" #'revert-lsp-session-buffer lsp-browser-mode-map))
 
 (defun lsp-hover-value-at-point ()
   (when-let* ((params (lsp--text-document-position-params))

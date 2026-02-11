@@ -98,10 +98,6 @@
 
 (use-package! copilot
   :commands copilot--on-doc-focus
-  :hook
-  (java-ts-mode . copilot-mode)
-  (emacs-lisp-mode . copilot-mode)
-  (protobuf-mode . copilot-mode)
   :config
   (defun copilot-complete-dwim ()
     (interactive)

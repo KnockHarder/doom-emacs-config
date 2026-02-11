@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Optional or-else return empty map.
+# uuid: 3C015972-D6CC-485D-8692-11DBF6E53901
+# key: orelseemptymap
+# condition: t
+# --
+orElseGet(Collections::emptyMap);$0

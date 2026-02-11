@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Optional or else get empty list.
+# uuid: 2C6912B3-34EB-4948-9EB0-3616182D4DE5
+# key: orelseemptylist
+# condition: t
+# --
+orElseGet(Collections::emptyList);$0

@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Nullable optional
+# uuid: E2F361A9-EF76-45E7-9119-0C0327B090E0
+# key: ofnullable
+# condition: t
+# --
+ofNullable($0)

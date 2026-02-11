@@ -31,5 +31,5 @@
               (window (side-window-open-by-buffer buffer 'left)))
     (with-current-buffer buffer
       (set-window-point window (point-max))))
-  (when-let ((buffer (get-buffer "*lsp session*")))
+  (when-let ((buffer (get-buffer "*lsp-documentation*")))
     (side-window-open-by-buffer buffer 'left)))

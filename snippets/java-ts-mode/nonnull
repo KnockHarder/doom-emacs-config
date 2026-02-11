@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Object not null.
+# uuid: 19E68D3C-23C1-4108-B81C-199B574ECDE5
+# key: nonnull
+# condition: t
+# --
+Objects::nonNull$0

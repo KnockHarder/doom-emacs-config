@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Collect entry stream to map
+# uuid: BFA8BFCD-C06C-45D8-96FD-367F28316FC3
+# key: tomapbyentry
+# condition: t
+# --
+collect(Collectors.toMap(Entry::getKey, Entry::getValue, (a, b) -> a));$0

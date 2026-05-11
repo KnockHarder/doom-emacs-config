@@ -138,18 +138,18 @@
         ("C-c M-}" . #'python-nav-forward-defun)
         ("C-c M-{" . #'python-nav-backward-defun)
         ))
-(use-package! pipenv
-  :commands pipenv-mode
-  :init
-  (defun my/setup-pipenv ()
-    "set python paths for pipenv."
-    (let ((python-path (string-trim (shell-command-to-string "pipenv run which python"))))
-      (setq-local python-interpreter python-path)
-      (setq-local pythonic-interpreter python-path)
-      (setq-local lsp-pyright-python-executable-cmd python-path)
-      (shell-command "pipenv run pip install isort pyflakes flake8")))
-  :hook
-  (pipenv-mode . my/setup-pipenv))
+;; (use-package! pipenv
+;;   :commands pipenv-mode
+;;   :init
+;;   (defun my/setup-pipenv ()
+;;     "set python paths for pipenv."
+;;     (let ((python-path (string-trim (shell-command-to-string "pipenv run which python"))))
+;;       (setq-local python-interpreter python-path)
+;;       (setq-local pythonic-interpreter python-path)
+;;       (setq-local lsp-pyright-python-executable-cmd python-path)
+;;       (shell-command "PIPENV_IGNORE_VIRTUALENVS=1 pipenv run pip install isort pyflakes flake8")))
+;;   :hook
+;;   (pipenv-mode . my/setup-pipenv))
 
 ;; spell and translate
 (after! spell-fu

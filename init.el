@@ -18,6 +18,7 @@
        markdown
        (python +lsp +pyenv)
        (java +lsp)
+       (javascript +lsp)
        kotlin
        (org +present)
        (treesit-f)

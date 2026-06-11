@@ -26,7 +26,7 @@
   "Get defin Maven coordinate from input-string."
   (interactive)
   (if-let* ((response (car (lsp-request "textDocument/definition" (lsp--text-document-position-params))))
-            (uri (gethash "uri" response)))
+            (uri (lsp-get response :uri)))
       (let ((location (cond
                        ((string-prefix-p "jdt://" uri)
                         (if-let* ((mvn-group-id (and (string-match "=\\/maven.groupId=\\(/[^=]+\\)=" uri)
